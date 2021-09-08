@@ -19,3 +19,7 @@ pip install -r requirements.txt
 streamlit run st_tweet_count_api.py
 ```
 
+#### Explore Cached datasets
+```
+streamlit run st_explore_data.py
+```
