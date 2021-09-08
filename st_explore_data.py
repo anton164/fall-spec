@@ -16,14 +16,18 @@ selected_file = os.path.join(
     data_dir,
     st.selectbox("Select a file", options=files)
 )
+resampling_period = st.text_input("Resample dataframe", value="24H")
 with open(selected_file, "r") as f:
     file_content = json.load(f)
     query_params = file_content["query_params"]
     df_timeseries = pd.DataFrame(file_content["data"])
+    df_timeseries["time_end"] = pd.to_datetime(df_timeseries.time_end)
+    df_timeseries = df_timeseries.set_index("time_end").resample(resampling_period).sum()
+
 st.write("### Query Params")
 st.write(query_params)
 st.write(f"**Total tweet count:** {df_timeseries.tweet_count.sum():,}")
-st.write(px.line(df_timeseries, x="time_end", y="tweet_count"))
+st.write(px.line(df_timeseries, y="tweet_count"))
 
 st.subheader("Explore tweets on Twitter for this query")
 date = st.date_input("Select date")
