@@ -6,7 +6,7 @@ import json
 
 st.header("Explore cached datasets")
 
-data_dir = "./data"
+data_dir = "./data/tweet_counts"
 files = os.listdir(data_dir)
 
 selected_file = os.path.join(

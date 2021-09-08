@@ -57,7 +57,7 @@ st.write(px.line(df_timeseries, x="time_end", y="tweet_count"))
 filename = st.text_input("Filename").replace(".json", "")
 if st.button("Export dataframe to json"):
     if filename != "":
-        out_file = f"data/{filename}.json"
+        out_file = f"data/tweet_counts/{filename}.json"
         with open(out_file, "w") as f:
             json.dump({
                 "query_params": query_params,
