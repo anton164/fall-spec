@@ -1,9 +1,10 @@
-from api.twitter import fetch_historical_counts
+from api.twitter import CountQueryParams, fetch_historical_counts
 import streamlit as st
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import plotly.express as px
+import json
 
 st.header("Explore Tweet Counts API")
 query = st.text_input("Query", value="@conEdison OR from:conEdison OR to:conEdison")
@@ -22,12 +23,12 @@ end_time = col2.date_input(
 )
     
 granularity = st.selectbox("Granularity", options=[
-    "day", 
 #    "minute", 
-    "hour"
+    "hour",
+    "day"
 ])
 
-query_counts = fetch_historical_counts({
+query_params: CountQueryParams = {
     "query": query,
     "granularity": granularity,
     "start_time": datetime.combine(
@@ -38,7 +39,9 @@ query_counts = fetch_historical_counts({
         end_time,
         datetime.min.time()
     ).replace(tzinfo=timezone.utc).isoformat()
-})
+}
+
+query_counts = fetch_historical_counts(query_params)
 
 st.write(f"**Total tweet count:** {query_counts['meta']['total_tweet_count']:,}")
 with st.expander("Show API Response"):
@@ -55,10 +58,11 @@ filename = st.text_input("Filename").replace(".json", "")
 if st.button("Export dataframe to json"):
     if filename != "":
         out_file = f"data/{filename}.json"
-        df_timeseries.to_json(
-            out_file,
-            orient="records"
-        )
+        with open(out_file, "w") as f:
+            json.dump({
+                "query_params": query_params,
+                "data": df_timeseries.to_dict(orient="records")
+            }, f)
         st.success(f"Wrote to {out_file}!")
     else:
         st.error("Specify a filename!")
