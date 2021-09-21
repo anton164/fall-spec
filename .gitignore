@@ -133,3 +133,5 @@ config/*
 !config/*sample.json
 
 .vscode
+
+MStream/data/*
