@@ -7,7 +7,7 @@ import plotly.express as px
 import json
 
 st.header("Explore Tweet Counts API")
-query = st.text_input("Query", value="@conEdison OR from:conEdison OR to:conEdison")
+query = st.text_input("Query", value="@theestallion OR from:theestallion OR to:theestallion")
 col1, col2 = st.columns(2)
 default_end_time = datetime.strptime(
     "2021-09-01", 
