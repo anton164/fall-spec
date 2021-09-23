@@ -157,7 +157,8 @@ def fetch_historical_tweets(
         response["data"] += next_response["data"]
         response["includes"]["users"] += next_response["includes"]["users"]
         response["includes"]["tweets"] += next_response["includes"]["tweets"]
-        response["errors"] += next_response["errors"]
+        if "errors" in next_response:
+            response["errors"] += next_response["errors"]
         response["meta"]["result_count"] += next_response["meta"]["result_count"]
 
         if "next_token" not in next_response["meta"]:
