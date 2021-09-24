@@ -1,5 +1,13 @@
 import pandas as pd
 
+def get_with_default(obj, keys, default):
+    for key in keys:
+        if key in obj:
+            obj = obj[key]
+        else:
+            return default
+    return obj
+
 def create_tweet_df(raw_dataset_tweets):
     """ Create tweet dataset dataframe from raw tweet objects response """
     tweets = []
@@ -8,9 +16,11 @@ def create_tweet_df(raw_dataset_tweets):
             "id": raw_tweet["id"],
             "text": raw_tweet["text"],
             "created_at": pd.to_datetime(raw_tweet["created_at"]),
-            "hashtags": [hashtag["tag"] for hashtag in raw_tweet["entities"]["hashtags"]] if "hashtags" in raw_tweet["entities"] else [],
-            "mentions": [mention["username"] for mention in raw_tweet["entities"]["mentions"]] if "mentions" in raw_tweet["entities"] else [],
+            "hashtags": [hashtag["tag"] for hashtag in get_with_default(raw_tweet, ["entities", "hashtags"], [])],
+            "mentions": [mention["username"] for mention in get_with_default(raw_tweet, ["entities", "mentions"], [])],
             "in_reply_to_user_id": raw_tweet["in_reply_to_user_id"] if "in_reply_to_user_id" in raw_tweet else None,
+            "user_id": raw_tweet["author_id"]
+            # to get user screen name we must look at raw_dataset_tweets["users"]
         }
         if "referenced_tweets" in raw_tweet:
             for reference in raw_tweet["referenced_tweets"]:
