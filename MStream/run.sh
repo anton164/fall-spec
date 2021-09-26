@@ -4,6 +4,30 @@ make clean
 make
 cd ../
 
+if [ $1 == "CentralParkNYC-2021-01-27-2021-02-06" ]; then
+  echo "CentralParkNYC"
+  echo "Vanilla MSTREAM"
+  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'data/CentralParkNYCnumeric.txt' -c 'data/CentralParkNYCcateg.txt' -o 'score.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'score.txt'
+  : '
+  echo "MSTREAM-PCA"
+  python3 pca.py --input 'data/CentralParkNYCnumeric.txt'
+  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'pca.txt' -c 'data/CentralParkNYCcateg.txt' -o 'pcascore.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'pcascore.txt'
+
+  echo "MSTREAM-IB"
+  python3 ib.py --input 'data/CentralParkNYCnumeric.txt' --inputdim 34 --label 'data/CentralParkNYC_label.txt' --lr 0.01 --numEpochs 100
+  echo "MSTREAM-IB-2"
+  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'ib.txt' -c 'data/CentralParkNYCcateg.txt' -o 'ibscore.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'ibscore.txt'
+
+  echo "MSTREAM-AE"
+  python3 ae.py --input 'data/CentralParkNYCnumeric.txt' --inputdim 34 --lr 0.01 --numEpochs 100
+  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'ae.txt' -c 'data/CentralParkNYCcateg.txt' -o 'aescore.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'aescore.txt'
+  '
+fi
+
 if [ $1 == "KDD" ]; then
   echo "KDD"
   echo "Vanilla MSTREAM"
