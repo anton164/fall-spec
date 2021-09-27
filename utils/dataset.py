@@ -1,4 +1,8 @@
+from utils import flatten
 import pandas as pd
+from .dtypes import tweet_dtypes
+from collections import Counter
+import numpy as np
 
 def get_with_default(obj, keys, default):
     for key in keys:
@@ -35,3 +39,33 @@ def create_tweet_df(raw_dataset_tweets):
 
     df_tweets = pd.DataFrame(tweets)
     return df_tweets.sort_values("created_at")
+
+def load_tweet_dataset(location):
+    df_tweets = pd.read_json(location, dtype=tweet_dtypes)
+    df_tweets["created_at"] = pd.to_datetime(df_tweets.created_at)
+
+    df_tweets["retweeted"] = df_tweets.retweeted.apply(lambda x: None if x == "None" else x)
+    df_tweets["quoted"] = df_tweets.quoted.apply(lambda x: None if x == "None" else x)
+    df_tweets["replied_to"] = df_tweets.replied_to.apply(lambda x: None if x == "None" else x)
+
+    # lower entities
+    df_tweets["hashtags"] = df_tweets.hashtags.apply(lambda xs: [x.lower() for x in xs])
+    df_tweets["mentions"] = df_tweets.mentions.apply(lambda xs: [x.lower() for x in xs])
+
+    # Set retweet count 0 for retweets
+    df_tweets["retweet_count"] = df_tweets.apply(
+        lambda x: x.retweet_count if x.retweeted is None else 0, 
+        axis=1
+    )
+
+    return df_tweets
+
+def count_array_column(df_column):
+    import streamlit as st
+    column_count = Counter([x.lower() for x in flatten(df_column)])
+    df_counts = pd.DataFrame(
+        column_count.items(), 
+        columns=["value", "count"]
+    ).sort_values("count", ascending=False)
+    df_counts["pct"] = df_counts["count"] / len(df_column)
+    return df_counts
