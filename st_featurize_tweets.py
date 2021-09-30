@@ -1,3 +1,5 @@
+from utils.mstream import load_mstream_predictions
+from utils.st_utils import st_select_file
 from utils.dataset import count_array_column, load_tweet_dataset
 import streamlit as st
 import os
@@ -6,14 +8,18 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 from utils.dtypes import tweet_dtypes
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
 
 st.header("Featurize dataset")
 
 data_dir = "./data/mstream_datasets"
-datasets = [f for f in os.listdir(data_dir) if f.endswith(".json")]
-selected_dataset = st.selectbox("Select a dataset", options=datasets)
+selected_dataset = st_select_file(
+    "Select dataset",
+    "./data/mstream_datasets",
+    ".json"
+)
 
-df_tweets = load_tweet_dataset(os.path.join(data_dir, selected_dataset))
+df_tweets = load_tweet_dataset(selected_dataset)
 
 df_retweets = df_tweets[pd.notna(df_tweets.retweeted)]
 df_quotes = df_tweets[pd.notna(df_tweets.quoted)]
@@ -59,20 +65,21 @@ with st.expander("Dataset completeness"):
         """
     )
 
-st.subheader("Top 5 tweets by retweets")
-st.write(df_tweets.nlargest(5, "retweet_count"))
+with st.expander("Top tweets, hashtags & mentions"):
+    st.subheader("Top 5 tweets by retweets")
+    st.write(df_tweets.nlargest(5, "retweet_count"))
 
-col1, col2  = st.columns(2)
-col1.subheader("Top hashtags")
-df_top_hashtags = count_array_column(df_tweets["hashtags"])
-col1.write(
-    df_top_hashtags[:10]
-)
-col2.subheader("Top mentions")
-df_top_mentions = count_array_column(df_tweets["mentions"])
-col2.write(
-    df_top_mentions[:10]
-)
+    col1, col2  = st.columns(2)
+    col1.subheader("Top hashtags")
+    df_top_hashtags = count_array_column(df_tweets["hashtags"])
+    col1.write(
+        df_top_hashtags[:10]
+    )
+    col2.subheader("Top mentions")
+    df_top_mentions = count_array_column(df_tweets["mentions"])
+    col2.write(
+        df_top_mentions[:10]
+    )
 
 st.header("Explore time series of features")
 
@@ -169,6 +176,58 @@ fig.add_annotation(
     yref="paper",
     showarrow=False,
     text="labeled spike"
+)
+
+st.write(fig)
+
+st.header("Explore labeled dataset")
+labels_file_loc = st_select_file("Select labels", data_dir="./data/mstream_datasets")
+
+df_tweets_with_mstream_output = load_mstream_predictions(
+    df_tweets,
+    labels_file_loc
+)
+
+fig = go.Figure()
+
+st.write(df_tweets)
+
+st.write(f"""
+**Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
+**Recall:** {recall_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
+**F1_score:** {f1_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}
+""")
+
+fig.add_trace(
+    go.Scatter(
+        x=df_tweets.created_at,
+        y=df_tweets.is_anomaly,
+        mode='lines',
+        name="True labels",
+        line_width=15
+    )
+)
+
+fig.add_trace(
+    go.Scatter(
+        x=df_tweets.created_at,
+        y=df_tweets.mstream_is_anomaly.astype(int),
+        mode='markers',
+        marker_symbol="x",
+        name="Predicted labels",
+        opacity=1.0
+    )
+)
+
+
+fig.add_trace(
+    go.Scatter(
+        x=df_tweets.created_at,
+        y=df_tweets.mstream_anomaly_score,
+        mode='lines',
+        name="Anomaly score",
+        opacity=0.5
+    )
 )
 
 st.write(fig)
