@@ -134,6 +134,7 @@ config/*
 
 .vscode
 
+MStream/mstream/*.o
 MStream/data/*
 data/tweet_objects/*
 
