@@ -2,7 +2,7 @@ import pandas as pd
 import argparse
 from utils.nlp import preprocess_text
 
-INPUT_DATA_LOCATION = './data/mstream_datasets/'
+INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
 
 parser = argparse.ArgumentParser()

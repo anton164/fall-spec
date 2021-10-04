@@ -12,10 +12,10 @@ from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_
 
 st.header("Featurize dataset")
 
-data_dir = "./data/mstream_datasets"
+data_dir = "./data/labeled_datasets"
 selected_dataset = st_select_file(
     "Select dataset",
-    "./data/mstream_datasets",
+    "./data/labeled_datasets",
     ".json"
 )
 
@@ -181,7 +181,7 @@ fig.add_annotation(
 st.write(fig)
 
 st.header("Explore labeled dataset")
-labels_file_loc = st_select_file("Select labels", data_dir="./data/mstream_datasets")
+labels_file_loc = st_select_file("Select labels", data_dir="./data/labeled_datasets")
 
 df_tweets_with_mstream_output = load_mstream_predictions(
     df_tweets,

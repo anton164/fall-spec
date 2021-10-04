@@ -12,14 +12,68 @@ pip install -r requirements.txt
 1. Add Twitter API keys to `config/twitter.json` file.
 
 
-## Run
+# Pipeline Documentation
 
-#### Explore Tweet Count API
+## 1) Explore tweet count API
 ```
 streamlit run st_tweet_count_api.py
 ```
 
-#### Explore Cached datasets
+- Reads from Twitter API
+- Saves to `data/tweet_objects`
+## 2) Explore saved tweet counts & fetch tweet objects 
 ```
-streamlit run st_explore_data.py
+streamlit run st_explore_tweet_counts.py
 ```
+
+- Reads from `data/tweet_counts` & Twitter API
+- Saves to `data/tweet_objects`
+
+## 3) Explore tweet object datasets
+```
+streamlit run st_explore_tweet_objects.py
+```
+
+- Reads from `data/tweet_objects` 
+
+## 4) Label tweet object datasets
+```
+juptyer_notebooks/label_tweet_dataset.ipynb
+```
+
+- Reads from `data/tweet_objects` 
+- Writes to `data/labeled_datasets`
+
+
+## 5) Explore labeled tweet object datasets
+```
+streamlit run st_featurize_tweets.py
+```
+
+## 6) Convert labeled dataset to mstream dataset 
+```
+python prepare_mstream_data.py <input_filename> <output_filename>
+```
+
+- Reads from `data/labeled_datasets` 
+- Writes to `MStream/data`
+
+## 7) Run MStream
+```
+cd MStream
+./run.sh <input_dataset_name>
+```
+
+- Reads from `MStream/data`
+- Writes to `MStream/data`
+
+## 8) Combine MStream output with labeled dataset
+
+
+#### TODO: Anton
+
+
+## 9) Inspect MStream results 
+
+
+#### TODO: Anton
