@@ -180,17 +180,21 @@ fig.add_annotation(
 
 st.write(fig)
 
-st.header("Explore labeled dataset")
-labels_file_loc = st_select_file("Select labels", data_dir="./data/labeled_datasets")
+st.header("Explore MStream Results")
+mstream_labels_file = st_select_file(
+    "Select generated labels", 
+    data_dir="./MStream/data",
+    extension="_score.txt"
+)
 
 df_tweets_with_mstream_output = load_mstream_predictions(
     df_tweets,
-    labels_file_loc
+    mstream_labels_file
 )
 
 fig = go.Figure()
 
-st.write(df_tweets)
+st.write(df_tweets.head())
 
 st.write(f"""
 **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  

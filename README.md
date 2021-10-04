@@ -50,6 +50,8 @@ juptyer_notebooks/label_tweet_dataset.ipynb
 streamlit run st_featurize_tweets.py
 ```
 
+- Reads from `data/tweet_objects` 
+
 ## 6) Convert labeled dataset to mstream dataset 
 ```
 python prepare_mstream_data.py <input_filename> <output_filename>
@@ -67,13 +69,10 @@ cd MStream
 - Reads from `MStream/data`
 - Writes to `MStream/data`
 
-## 8) Combine MStream output with labeled dataset
+## 8) Inspect MStream results
+```
+streamlit run st_featurize_tweets.py
+```
 
-
-#### TODO: Anton
-
-
-## 9) Inspect MStream results 
-
-
-#### TODO: Anton
+- Reads from `data/tweet_objects` 
+- Reads from `MStream/data`

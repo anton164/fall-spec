@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 from utils.nlp import preprocess_text
+from utils.dataset import tweet_dtypes
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
@@ -18,7 +19,11 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-df = pd.read_json(INPUT_DATA_LOCATION + args.input_file).set_index("id")
+df = pd.read_json(
+    INPUT_DATA_LOCATION + args.input_file,
+    dtype=tweet_dtypes
+).set_index("id")
+
 
 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
 
