@@ -7,8 +7,8 @@ cd ../
 if [ $1 == "CentralParkNYC-2021-01-27-2021-02-06" ]; then
   echo "CentralParkNYC"
   echo "Vanilla MSTREAM"
-  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'data/CentralParkNYCnumeric.txt' -c 'data/CentralParkNYCcateg.txt' -o 'score.txt' -a 0.8
-  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'score.txt'
+  mstream/mstream -t 'data/CentralParkNYCtime.txt' -n 'data/CentralParkNYCnumeric.txt' -c 'data/CentralParkNYCcateg.txt' -o 'data/CentralParkNYC_score.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'data/CentralParkNYC_score.txt'
   : '
   echo "MSTREAM-PCA"
   python3 pca.py --input 'data/CentralParkNYCnumeric.txt'
