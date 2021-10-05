@@ -5,3 +5,5 @@ plotly
 streamlit
 watchdog
 sklearn
+nltk
+emoji

@@ -28,6 +28,13 @@ if [ $1 == "CentralParkNYC-2021-01-27-2021-02-06" ]; then
   '
 fi
 
+if [ $1 == "CentralParkNYC" ]; then
+  echo "CentralParkNYC"
+  echo "Vanilla MSTREAM"
+  mstream/mstream -t 'data/CentralParkNYC_time.txt' -n 'data/CentralParkNYC_numeric.txt' -c 'data/CentralParkNYC_categ.txt' -o 'data/CentralParkNYC_score.txt' -a 0.8
+  python3 results.py --label 'data/CentralParkNYC_label.txt' --scores 'data/CentralParkNYC_score.txt'
+fi
+
 if [ $1 == "KDD" ]; then
   echo "KDD"
   echo "Vanilla MSTREAM"
