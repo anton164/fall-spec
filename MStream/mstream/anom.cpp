@@ -2,6 +2,7 @@
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
 #include <vector>
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include "anom.hpp"
@@ -41,6 +42,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
 
     for (int i = 0; i < length; i++) {
         if (i == 0 || times[i] > cur_t) {
+            //cout << factor;
             cur_count.lower(factor);
             for (int j = 0; j < dimension1; j++) {
                 numeric_score[j].lower(factor);
