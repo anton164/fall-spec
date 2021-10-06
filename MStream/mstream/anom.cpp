@@ -16,7 +16,7 @@ double counts_to_anom(double tot, double cur, int cur_t) {
     return sqerr / cur_mean + sqerr / (cur_mean * MAX(1, cur_t - 1));
 }
 
-vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, int num_rows,
+vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
                         int num_buckets, double factor, int dimension1, int dimension2) {
 
     int length = times.size(), cur_t = 1;
@@ -84,13 +84,20 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         for (int node_iter = 0; node_iter < dimension2; node_iter++) {
             categ_score[node_iter].insert(cur_categ[node_iter], 1);
             categ_total[node_iter].insert(cur_categ[node_iter], 1);
-            t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
-                               categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t);
+            if (cur_categ[node_iter] == 0) {
+                t = 0;
+            } else {
+                t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
+                                   categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t);                
+            }
             sum = sum+t;
         }
-
-        cur_score = counts_to_anom(total_count.get_count(cur_numeric, cur_categ),
-                                   cur_count.get_count(cur_numeric, cur_categ), cur_t);
+        if (ignore[i] == 0) {
+            cur_score = counts_to_anom(total_count.get_count(cur_numeric, cur_categ),
+                                       cur_count.get_count(cur_numeric, cur_categ), cur_t);            
+        } else {
+            cur_score = 0;
+        }
         sum = sum + cur_score;
         (*anom_score)[i] = log(1 + sum);
 

@@ -7,8 +7,8 @@
 
 using namespace std;
 
-void load_data(vector<vector<double> > &numeric, vector<vector<long> > &categorical, vector<int> &times,
-               const string &numeric_filename, const string &categ_filename, const string &time_filename) {
+void load_data(vector<vector<double> > &numeric, vector<vector<long> > &categorical, vector<int> &times, vector<int> &ignore,
+               const string &numeric_filename, const string &categ_filename, const string &time_filename, const string &ignore_filename) {
     int l = 0;
     string s, line;
     if (!numeric_filename.empty()) {
@@ -98,6 +98,32 @@ void load_data(vector<vector<double> > &numeric, vector<vector<long> > &categori
         cerr << "Could not read file " << time_filename << "\n";
         __throw_invalid_argument("File not found.");
     }
+    ifstream ignoreFile(ignore_filename);
+    l = 0;
+    while (ignoreFile) {
+        l++;
+        if (!getline(ignoreFile, s))
+            break;
+        if (s[0] != '#') {
+            istringstream ss(s);
+            while (ss) {
+                if (!getline(ss, line, ','))
+                    break;
+                try {
+                    ignore.push_back(stoi(line));
+                }
+                catch (const std::invalid_argument &e) {
+                    cout << "NaN found in file " << ignore_filename << " line " << l
+                         << endl;
+                    e.what();
+                }
+            }
+        }
+    }
+    if (!ignoreFile.eof()) {
+        cerr << "Could not read file " << ignore_filename << "\n";
+        __throw_invalid_argument("File not found.");
+    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -112,6 +138,9 @@ int main(int argc, const char *argv[]) {
     program.add_argument("-t", "--times")
             .required()
             .help("Timestamp Data File");
+    program.add_argument("-i", "--ignore")
+            .required()
+            .help("Ignore file is required");
     program.add_argument("-r", "--rows")
             .default_value(2)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -139,6 +168,7 @@ int main(int argc, const char *argv[]) {
     string categ_filename = program.get<string>("-c");
     string times_filename = program.get<string>("-t");
     string output_filename = program.get<string>("-o");
+    string ignore_filename = program.get<string>("-i");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     auto alpha = program.get<double>("-a");
@@ -166,21 +196,22 @@ int main(int argc, const char *argv[]) {
     vector<vector<double> > numeric;
     vector<vector<long> > categ;
     vector<int> times;
+    vector<int> ignore;
     int dimension1 = 0, dimension2 = 0;
-    load_data(numeric, categ, times, numeric_filename, categ_filename, times_filename);
+    load_data(numeric, categ, times, ignore, numeric_filename, categ_filename, times_filename, ignore_filename);
     if (!numeric.empty())
         dimension1 = numeric[0].size();
     if (!categ.empty())
         dimension2 = categ[0].size();
-    if ((dimension1 && times.size() != numeric.size()) || (dimension2 && times.size() != categ.size())) {
-        cerr << "Number of records in the files do not match.\n";
+    if ((dimension1 && times.size() != numeric.size()) || (dimension2 && times.size() && ignore.size() != categ.size())) {
+        cout << (dimension2 && times.size() != categ.size());
         exit(1);
     }
 
     cout << "Finished loading" << endl;
 
     clock_t start_time2 = clock();
-    vector<double> *scores2 = mstream(numeric, categ, times, rows, buckets, alpha, dimension1, dimension2);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, dimension1, dimension2);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");

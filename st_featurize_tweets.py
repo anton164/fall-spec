@@ -186,7 +186,6 @@ mstream_labels_file = st_select_file(
     data_dir="./MStream/data",
     extension="_score.txt"
 )
-
 df_tweets_with_mstream_output = load_mstream_predictions(
     df_tweets,
     mstream_labels_file
