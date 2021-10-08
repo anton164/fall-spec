@@ -7,3 +7,8 @@ watchdog
 sklearn
 nltk
 emoji
+spacy
+numba
+matplotlib
+salesforce-merlion
+salesforce-merlion[plot]
