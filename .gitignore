@@ -139,3 +139,5 @@ MStream/data/*
 data/tweet_objects/*
 
 .DS_Store
+
+data/embeddings

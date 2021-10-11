@@ -5,6 +5,12 @@
 ```
 conda create python=3.8 -n spec-project
 pip install -r requirements.txt
+python -m spacy download en_core_web_lg
+```
+#### Merlion dependencies
+```
+conda install -c conda-forge lightgbm 
+brew install libomp
 ``` 
 
 #### Set up API keys
