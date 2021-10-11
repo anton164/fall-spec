@@ -91,6 +91,8 @@ time_bucket_size = st.text_input("Time bucket size", value="30Min")
 df_timeseries = df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)).agg(
     total_count=('id', 'count'), 
     is_anomaly=('is_anomaly', lambda x: x.any()),
+    merlion_count_anomaly=('merlion_anomaly_total_count', lambda x: x.max()),
+    #merlion_hashtag1_anomaly=('merlion_anomaly_top1_hashtag_count', lambda x: x.max()),
     retweet_count=('retweeted', lambda x: pd.notna(x).sum()),
     quote_count=('quoted', lambda x: pd.notna(x).sum()),
     replied_to_count=('replied_to', lambda x: pd.notna(x).sum()),
