@@ -12,3 +12,4 @@ numba
 matplotlib
 salesforce-merlion
 salesforce-merlion[plot]
+umap-learn
