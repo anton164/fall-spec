@@ -90,6 +90,7 @@ time_bucket_size = st.text_input("Time bucket size", value="30Min")
 
 df_timeseries = df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)).agg(
     total_count=('id', 'count'), 
+    hashtag_count=('hashtags', lambda hashtag_col: hashtag_col.apply(lambda x: len(x)).sum()),
     is_anomaly=('is_anomaly', lambda x: x.any()),
     retweet_count=('retweeted', lambda x: pd.notna(x).sum()),
     quote_count=('quoted', lambda x: pd.notna(x).sum()),
@@ -127,7 +128,7 @@ df_timeseries["tweet_count"] = df_timeseries.apply(
 
 # Rename hashtag & mention columns
 df_timeseries = df_timeseries.rename(
-    lambda col: col if "hashtag" not in col else "#" + df_top_hashtags.iloc[
+    lambda col: col if "hashtag" not in col or col == "hashtag_count" else "#" + df_top_hashtags.iloc[
         int(next(filter(str.isdigit, col))) - 1   
     ].value,
     axis=1
@@ -146,9 +147,7 @@ selected_columns = st.multiselect(
     "Select columns",
     options=df_timeseries.columns,
     default=[
-        "tweet_count",
-        "retweet_count",
-        "quote_count",
+        "hashtag_count",
     ]
 )
 fig = go.Figure()

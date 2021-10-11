@@ -1,7 +1,7 @@
 import pandas as pd
 import argparse
 from utils.nlp import preprocess_text
-from utils.dataset import tweet_dtypes
+from utils.dataset import load_tweet_dataset
 import time
 import datetime
 import random
@@ -22,9 +22,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-df = pd.read_json(
-    INPUT_DATA_LOCATION + args.input_file,
-    dtype=tweet_dtypes
+df = load_tweet_dataset(
+    INPUT_DATA_LOCATION + args.input_file
 ).set_index("id")
 # TODO this is ugly don't kill me
 
@@ -32,6 +31,7 @@ def create_unix(x):
     return int(time.mktime((x).timetuple()))
 
 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
+#df['hashtags'] = df['hashtags'].apply(lambda xs: [x for x in xs if x.lower() == "unitedairlines"])
 
 #df = df.explode('hashtags').explode('mentions').explode('text')
 df = df.explode('hashtags')
@@ -52,7 +52,7 @@ df_symbolic.loc[:,'hashtags'].unique()
 
 hashtags_dict = {}
 for i, entry in enumerate(df_symbolic.loc[:,'hashtags'].unique()):
-    hashtags_dict[entry] = int(i*random.uniform(0, 1)*1000)
+    hashtags_dict[entry] = i
     
 '''user_id_dict = {}
 for i, entry in enumerate(df_symbolic.loc[:,'user_id'].unique()):
@@ -74,7 +74,9 @@ df_symbolic.loc[:,'hashtags'] =  df_symbolic.loc[:,'hashtags'].map(hashtags_dict
 df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
 df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)
 df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
+
 df_label.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
+df.loc[:,'created_at'] = pd.to_datetime(df['created_at']).dt.floor('60T')
 df.loc[:,'created_at'].map(create_unix).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
 df_label.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_record_score.txt", index=False, header=False)
 
