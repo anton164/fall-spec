@@ -20,6 +20,8 @@ selected_dataset = st_select_file(
 )
 
 df_tweets = load_tweet_dataset(selected_dataset)
+merlin_anomaly_threshold = st.number_input("Merlin anomaly threshold", value=1)
+df_tweets["is_anomaly"] = df_tweets["merlion_anomaly_total_count"].apply(lambda x: x > merlin_anomaly_threshold)
 
 df_retweets = df_tweets[pd.notna(df_tweets.retweeted)]
 df_quotes = df_tweets[pd.notna(df_tweets.quoted)]
@@ -93,7 +95,9 @@ df_timeseries = df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)
     hashtag_count=('hashtags', lambda hashtag_col: hashtag_col.apply(lambda x: len(x)).sum()),
     is_anomaly=('is_anomaly', lambda x: x.any()),
     merlion_count_anomaly=('merlion_anomaly_total_count', lambda x: x.max()),
-    #merlion_hashtag1_anomaly=('merlion_anomaly_top1_hashtag_count', lambda x: x.max()),
+    merlion_hashtag1_anomaly=('merlion_anomaly_top1_hashtag_count', lambda x: x.max()),
+    merlion_hashtag2_anomaly=('merlion_anomaly_top2_hashtag_count', lambda x: x.max()),
+    merlion_hashtag3_anomaly=('merlion_anomaly_top3_hashtag_count', lambda x: x.max()),
     retweet_count=('retweeted', lambda x: pd.notna(x).sum()),
     quote_count=('quoted', lambda x: pd.notna(x).sum()),
     replied_to_count=('replied_to', lambda x: pd.notna(x).sum()),
@@ -130,7 +134,7 @@ df_timeseries["tweet_count"] = df_timeseries.apply(
 
 # Rename hashtag & mention columns
 df_timeseries = df_timeseries.rename(
-    lambda col: col if "hashtag" not in col or col == "hashtag_count" else "#" + df_top_hashtags.iloc[
+    lambda col: col if "hashtag" not in col or col == "hashtag_count" or col.startswith("merlion") else "#" + df_top_hashtags.iloc[
         int(next(filter(str.isdigit, col))) - 1   
     ].value,
     axis=1
@@ -142,6 +146,11 @@ df_timeseries = df_timeseries.rename(
     ].value,
     axis=1
 )
+
+# anomaly based on merlion
+df_timeseries["is_anomaly_hashtag1"] = df_timeseries["merlion_hashtag1_anomaly"].apply(lambda x: x > merlin_anomaly_threshold)
+df_timeseries["is_anomaly_hashtag2"] = df_timeseries["merlion_hashtag2_anomaly"].apply(lambda x: x > merlin_anomaly_threshold)
+df_timeseries["is_anomaly_hashtag3"] = df_timeseries["merlion_hashtag3_anomaly"].apply(lambda x: x > merlin_anomaly_threshold)
 
 st.write(df_timeseries.head())
 
@@ -162,22 +171,42 @@ for col in selected_columns:
             name=col
         )
     )
-
-fig.add_vrect(
-    x0=df_timeseries[df_timeseries.is_anomaly].index.min(),
-    x1=df_timeseries[df_timeseries.is_anomaly].index.max(),
-    line_width=0.3,
-    fillcolor="green",
-    opacity=0.2
-)
-fig.add_annotation(
-    x=df_timeseries[df_timeseries.is_anomaly].index.min(),
-    xanchor="left",
-    y=1.06,
-    yref="paper",
-    showarrow=False,
-    text="labeled spike"
-)
+    if col == "total_count":
+        fig.add_trace(
+            go.Scatter(
+                x=df_timeseries[df_timeseries.is_anomaly].index,
+                y=df_timeseries[df_timeseries.is_anomaly]["total_count"],
+                mode='markers',
+                name="total count anomaly"
+            )
+        )
+    elif col == "#" + df_top_hashtags.iloc[0].value:
+        fig.add_trace(
+            go.Scatter(
+                x=df_timeseries[df_timeseries.is_anomaly_hashtag1].index,
+                y=df_timeseries[df_timeseries.is_anomaly_hashtag1]["#" + df_top_hashtags.iloc[0].value],
+                mode='markers',
+                name="hashtag 1 anomaly"
+            )
+        )
+    elif col == "#" + df_top_hashtags.iloc[1].value:
+        fig.add_trace(
+            go.Scatter(
+                x=df_timeseries[df_timeseries.is_anomaly_hashtag2].index,
+                y=df_timeseries[df_timeseries.is_anomaly_hashtag2]["#" + df_top_hashtags.iloc[1].value],
+                mode='markers',
+                name="hashtag 2 anomaly"
+            )
+        )
+    elif col == "#" + df_top_hashtags.iloc[2].value:
+        fig.add_trace(
+            go.Scatter(
+                x=df_timeseries[df_timeseries.is_anomaly_hashtag3].index,
+                y=df_timeseries[df_timeseries.is_anomaly_hashtag3]["#" + df_top_hashtags.iloc[2].value],
+                mode='markers',
+                name="hashtag 3 anomaly"
+            )
+        )
 
 st.write(fig)
 
