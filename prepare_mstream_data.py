@@ -19,6 +19,12 @@ parser.add_argument(
     'output_name', 
     help='Outuput name'
 )
+parser.add_argument(
+    '--anomaly_threshold',
+    required=False,
+    default=1,
+    type=float
+)
 
 args = parser.parse_args()
 
@@ -29,6 +35,13 @@ df = load_tweet_dataset(
 
 def create_unix(x):
     return int(time.mktime((x).timetuple()))
+
+# Load labels from merlion
+df["is_anomaly"] = df["merlion_anomaly_total_count"].apply(lambda x: x > args.anomaly_threshold)
+df["is_anomaly_hashtag1"] = df["merlion_anomaly_top1_hashtag_count"].apply(lambda x: x > args.anomaly_threshold)
+df["is_anomaly_hashtag2"] = df["merlion_anomaly_top2_hashtag_count"].apply(lambda x: x > args.anomaly_threshold)
+df["is_anomaly_hashtag3"] = df["merlion_anomaly_top3_hashtag_count"].apply(lambda x: x > args.anomaly_threshold)
+
 
 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
 #df['hashtags'] = df['hashtags'].apply(lambda xs: [x for x in xs if x.lower() == "unitedairlines"])
