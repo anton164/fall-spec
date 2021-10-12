@@ -43,8 +43,8 @@ df["is_anomaly_hashtag2"] = df["merlion_anomaly_top2_hashtag_count"].apply(lambd
 df["is_anomaly_hashtag3"] = df["merlion_anomaly_top3_hashtag_count"].apply(lambda x: x > args.anomaly_threshold)
 
 
-df['text'] = df['text'].apply(lambda x: preprocess_text(x))
-#df['hashtags'] = df['hashtags'].apply(lambda xs: [x for x in xs if x.lower() == "unitedairlines"])
+#df['text'] = df['text'].apply(lambda x: preprocess_text(x))
+df['hashtags'] = df['hashtags'].apply(lambda xs: [x for x in xs if x.lower() == "unitedairlines"])
 
 #df = df.explode('hashtags').explode('mentions').explode('text')
 df = df.explode('hashtags')
@@ -89,9 +89,9 @@ df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=
 df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
 
 df_label.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
-df.loc[:,'created_at'] = pd.to_datetime(df['created_at']).dt.floor('60T')
+df.loc[:,'created_at'] = pd.to_datetime(df['created_at']).dt.floor('30T')
 df.loc[:,'created_at'].map(create_unix).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
-df_label.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_record_score.txt", index=False, header=False)
+df_label.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_score_record.txt", index=False, header=False)
 
 text_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", "w")
 df_symbolic.shape[0]

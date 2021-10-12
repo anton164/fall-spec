@@ -211,15 +211,23 @@ for col in selected_columns:
 st.write(fig)
 
 st.header("Explore MStream Results")
-mstream_labels_file = st_select_file(
-    "Select generated labels", 
+mstream_scores_file = st_select_file(
+    "Select generated scores", 
     data_dir="./MStream/data",
     extension="_score.txt"
 )
+mstream_labels_file = st_select_file(
+    "Select generated labels", 
+    data_dir="./MStream/data",
+    extension="_predictions.txt"
+)
+print(df_tweets)
 df_tweets_with_mstream_output = load_mstream_predictions(
     df_tweets,
+    mstream_scores_file,
     mstream_labels_file
 )
+print(df_tweets)
 
 fig = go.Figure()
 
@@ -231,27 +239,27 @@ st.write(f"""
 **F1_score:** {f1_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}
 """)
 
+max_mstream_score = df_tweets.mstream_anomaly_score.max()
+
 fig.add_trace(
     go.Scatter(
         x=df_tweets.created_at,
-        y=df_tweets.is_anomaly,
+        y=df_tweets.is_anomaly.astype(int)*max_mstream_score + 20,
         mode='lines',
         name="True labels",
-        line_width=15
+        opacity=0.5
     )
 )
 
 fig.add_trace(
     go.Scatter(
         x=df_tweets.created_at,
-        y=df_tweets.mstream_is_anomaly.astype(int),
-        mode='markers',
-        marker_symbol="x",
+        y=df_tweets.mstream_is_anomaly.astype(int)*max_mstream_score,
+        mode='lines',
         name="Predicted labels",
-        opacity=1.0
+        opacity=0.5
     )
 )
-
 
 fig.add_trace(
     go.Scatter(

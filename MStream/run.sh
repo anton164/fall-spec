@@ -38,8 +38,8 @@ fi
 if [ $1 == "united" ]; then
   echo "united"
   echo "Vanilla MSTREAM"
-  mstream/mstream -t 'data/united_time.txt' -n 'data/united_numeric.txt' -c 'data/united_categ.txt' -i 'data/united_ignore_record_score.txt' -o 'data/united_score.txt' -a 0.001
-  python3 results.py --label 'data/united_label.txt' --scores 'data/united_score.txt'
+  mstream/mstream -t 'data/united_time.txt' -n 'data/united_numeric.txt' -c 'data/united_categ.txt' -i 'data/united_ignore_score_record.txt' -o 'data/united_score.txt' -a 0.8
+  python3 results.py --label 'data/united_label.txt' --scores 'data/united_score.txt' --name 'united'
 fi
 
 if [ $1 == "KDD" ]; then
