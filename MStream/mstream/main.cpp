@@ -141,6 +141,9 @@ int main(int argc, const char *argv[]) {
     program.add_argument("-i", "--ignore")
             .required()
             .help("Ignore file is required");
+    program.add_argument("-d", "--decompose")
+            .required()
+            .help("Decomposed scores file is required");
     program.add_argument("-r", "--rows")
             .default_value(2)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -169,6 +172,7 @@ int main(int argc, const char *argv[]) {
     string times_filename = program.get<string>("-t");
     string output_filename = program.get<string>("-o");
     string ignore_filename = program.get<string>("-i");
+    string decomposed_scores_filename = program.get<string>("-d");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     auto alpha = program.get<double>("-a");
@@ -211,12 +215,20 @@ int main(int argc, const char *argv[]) {
     cout << "Finished loading" << endl;
 
     clock_t start_time2 = clock();
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, dimension1, dimension2);
+    int length = times.size();
+    //vector<double> scores_decomposed = new vector<double>(length);
+    std::vector<string> scores_decomposed(length);
+    std::vector<string> scores_decomposed_percentage(length);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, dimension1, dimension2, scores_decomposed);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");
+    FILE *decomposed_score_file = fopen(decomposed_scores_filename.c_str(), "w");
     for (double i : *scores2) {
         fprintf(output_file, "%f\n", i);
+    }
+    for (string i : scores_decomposed) {
+        fprintf(decomposed_score_file, "%s\n", i.c_str());
     }
     return 0;
 }

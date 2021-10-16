@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cmath>
 #include <limits>
+#include <sstream>
+#include <string>
 #include "anom.hpp"
 #include "numerichash.hpp"
 #include "recordhash.hpp"
@@ -17,7 +19,7 @@ double counts_to_anom(double tot, double cur, int cur_t) {
 }
 
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
-                        int num_buckets, double factor, int dimension1, int dimension2) {
+                        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed) {
 
     int length = times.size(), cur_t = 1;
 
@@ -41,6 +43,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<long> cur_categ(0);
 
     for (int i = 0; i < length; i++) {
+        std::vector< double > decomposed_scores;
         if (i == 0 || times[i] > cur_t) {
             //cout << factor;
             cur_count.lower(factor);
@@ -90,6 +93,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
                                    categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t);                
             }
+            decomposed_scores.push_back(t);
             sum = sum+t;
         }
         if (ignore[i] == 0) {
@@ -99,8 +103,17 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
             cur_score = 0;
         }
         sum = sum + cur_score;
+        std::ostringstream stream;
+        stream << log(1 + cur_score) << ',';
+        for (int i = 0; i < decomposed_scores.size(); i++) {
+            stream << std::to_string(log(1 + decomposed_scores[i]));
+            if (i != decomposed_scores.size() - 1) {
+                stream << ',';
+            }
+        }
+        std::string string_decomposed_scores = stream.str();
         (*anom_score)[i] = log(1 + sum);
-
+        (scores_decomposed)[i] = string_decomposed_scores;
     }
     return anom_score;
 }
