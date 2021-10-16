@@ -226,11 +226,17 @@ mstream_decomposed_scores_file = st_select_file(
     data_dir="./MStream/data",
     extension="_decomposed.txt"
 )
+mstream_decomposed_p_scores_file = st_select_file(
+    "Select decomposed scores", 
+    data_dir="./MStream/data",
+    extension="_decomposed_percentage.txt"
+)
 df_tweets_with_mstream_output = load_mstream_predictions(
     df_tweets,
     mstream_scores_file,
     mstream_labels_file,
-    mstream_decomposed_scores_file
+    mstream_decomposed_scores_file,
+    mstream_decomposed_p_scores_file
 )
 
 fig = go.Figure()
@@ -276,6 +282,18 @@ fig.add_trace(
 )
 for i, val in enumerate(df_tweets.columns):
     if 'mstream_decomposed_anomaly_score' in val:
+        fig.add_trace(
+            go.Scatter(
+                x=df_tweets.created_at,
+                y=df_tweets[val],
+                mode='lines',
+                name=val,
+                opacity=0.5
+            )
+        )
+
+for i, val in enumerate(df_tweets.columns):
+    if 'mstream_decomposed_p_anomaly_score'  in val:
         fig.add_trace(
             go.Scatter(
                 x=df_tweets.created_at,

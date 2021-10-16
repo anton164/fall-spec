@@ -8,6 +8,6 @@ using namespace std;
 
 vector<double> *
 mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
-        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed);
+        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed, vector<string> &scores_decomposed_p);
 
 #endif /* anom_hpp */

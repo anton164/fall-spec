@@ -19,7 +19,7 @@ double counts_to_anom(double tot, double cur, int cur_t) {
 }
 
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
-                        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed) {
+                        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed, vector<string> &scores_decomposed_p) {
 
     int length = times.size(), cur_t = 1;
 
@@ -104,16 +104,22 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         }
         sum = sum + cur_score;
         std::ostringstream stream;
+        std::ostringstream stream_2;
         stream << log(1 + cur_score) << ',';
+        stream_2 << cur_score/sum << ',';
         for (int i = 0; i < decomposed_scores.size(); i++) {
             stream << std::to_string(log(1 + decomposed_scores[i]));
+            stream_2 << std::to_string(decomposed_scores[i]/sum);
             if (i != decomposed_scores.size() - 1) {
                 stream << ',';
+                stream_2 << ',';
             }
         }
         std::string string_decomposed_scores = stream.str();
+        std::string string_decomposed_p_scores = stream_2.str();
         (*anom_score)[i] = log(1 + sum);
         (scores_decomposed)[i] = string_decomposed_scores;
+        (scores_decomposed_p)[i] = string_decomposed_p_scores;
     }
     return anom_score;
 }
