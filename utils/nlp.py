@@ -34,8 +34,41 @@ def final_text(words):
 
 def preprocess_text(
     text: str,
-    tokenize=True
+    tokenize=True,
+    lower=True
 ):
     """ Helper method for parametrizing text preprocessing """
+    if lower:
+        text = text.lower()
     if tokenize:
         return word_tokenize(text)
+
+def construct_vocabulary_encoding(
+    tokenized_strings,
+    fasttext
+):
+    """ Helper method for constructing vocabulary encoding from tokenized strings """
+    vocabulary = {}
+    fasttext_subset = {}
+    tokenized_string_idxs = []
+    for tokens in tokenized_strings:
+        idxs = []
+        tokenized_string_idxs.append(idxs)
+        for token in tokens:
+            if token not in vocabulary:
+                vocabulary[token] = {
+                    "occurrences": 1,
+                    "idx": len(vocabulary),
+                    "fasttext_idx": None
+                }
+                if token in fasttext:
+                    vocabulary[token]["fasttext_idx"] = fasttext.key_to_index[token]
+                    fasttext_subset[token] = fasttext[token].tolist()
+            else:
+                vocabulary[token]["occurrences"] += 1
+            idxs.append(vocabulary[token]["idx"])
+
+    return vocabulary, tokenized_string_idxs, fasttext_subset
+
+
+

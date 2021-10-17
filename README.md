@@ -66,7 +66,16 @@ python prepare_mstream_data.py <input_filename> <output_filename>
 - Reads from `data/labeled_datasets` 
 - Writes to `MStream/data`
 
-## 7) Run MStream
+## 7) Convert labeled dataset to fasttext embeddings 
+```
+python create_embeddings.py <input_filename> <output_filename>
+```
+Prerequisite: [Download fasttext embeddings](https://fasttext.cc/docs/en/english-vectors.html) and save them to `data/embeddings/fasttext`
+
+- Reads from `data/labeled_datasets`  and `data/embeddings/fasttext`
+- Writes to `data/embeddings/`
+
+## 8) Run MStream
 ```
 cd MStream
 ./run.sh <input_dataset_name>
@@ -75,7 +84,7 @@ cd MStream
 - Reads from `MStream/data`
 - Writes to `MStream/data`
 
-## 8) Inspect MStream results
+## 9) Inspect MStream results
 ```
 streamlit run st_featurize_tweets.py
 ```
