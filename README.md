@@ -58,6 +58,12 @@ streamlit run st_featurize_tweets.py
 
 - Reads from `data/tweet_objects` 
 
+## 6-8) Run MStream Pipeline for a labeled dataset
+```
+python mstream_pipeline.py <input_filename>
+```
+- Reads from `data/labeled_datasets` 
+- Writes to `MStream/data`, `data/embeddings/`
 ## 6) Convert labeled dataset to mstream dataset 
 ```
 python prepare_mstream_data.py <input_filename> <output_filename>
