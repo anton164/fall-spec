@@ -77,6 +77,9 @@ cmd = " ".join([
     f"-n 'data/{output_name}_numeric.txt'",
     f"-c 'data/{output_name}_categ.txt'",
     f"-o 'data/{output_name}_score.txt'",
+    f"-d 'data/{output_name}_decomposed.txt'",
+    f"-i 'data/{output_name}_ignore_score_record.txt'",
+    f"-dp 'data/{output_name}_decomposed_percentage.txt'",
     f"-a {args.mstream_alpha}"
 ])
 print("Running MStream...", cmd)
@@ -85,7 +88,8 @@ os.system(
     " ".join([
         "python results.py",
         f"--label 'data/{output_name}_label.txt'",
-        f"--scores 'data/{output_name}_score.txt'"
+        f"--scores 'data/{output_name}_score.txt'",
+        f"--name '{output_name}'"
     ])
 )
 os.chdir(CUR_DIR)
