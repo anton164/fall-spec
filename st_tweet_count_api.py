@@ -1,4 +1,4 @@
-from api.twitter import CountQueryParams, fetch_historical_counts
+from api.twitter import CountQueryParams, st_fetch_historical_counts
 import streamlit as st
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
@@ -41,7 +41,7 @@ query_params: CountQueryParams = {
     ).replace(tzinfo=timezone.utc).isoformat()
 }
 
-query_counts = fetch_historical_counts(query_params)
+query_counts = st_fetch_historical_counts(query_params)
 
 st.write(f"**Total tweet count:** {query_counts['meta']['total_tweet_count']:,}")
 with st.expander("Show API Response"):
