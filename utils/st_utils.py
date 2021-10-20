@@ -6,7 +6,8 @@ def st_select_file(
     data_dir, 
     only_files=True, 
     only_dirs=True,
-    extension=""
+    extension="",
+    default_selection=None
 ) -> str:
 
     def filter_files(filename: str):
@@ -19,6 +20,8 @@ def st_select_file(
 
     files = [f for f in os.listdir(data_dir) if filter_files(f)]
     selected_file = st.selectbox(
-        label, options=files
+        label, 
+        options=files,
+        index=files.index(default_selection) if default_selection in files else 0
     )
     return os.path.join(data_dir, selected_file)
