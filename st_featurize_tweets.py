@@ -231,8 +231,31 @@ except Exception as e:
 
 fig = go.Figure()
 
-st.subheader("MStream input")
-st.write(df_mstream_input.head())
+
+show_mstream_input = st.button("Show MStream input")
+if show_mstream_input:
+    st.subheader("MStream input")
+    st.write(df_mstream_input.head())
+
+    df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
+    unique_tokens = set()
+    def unique_tokens_over_time(text):
+        if pd.notna(text):
+            for token in text.split(" "):
+                unique_tokens.add(token)            
+        return len(unique_tokens)
+    df_unique_tokens = df_mstream_input.groupby(
+        df_mstream_input.created_at.dt.ceil(time_bucket_size)
+    ).agg(
+        unique_tokens=(
+            'text', 
+            lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
+        ),
+    )
+    st.write(px.line(
+        df_unique_tokens.unique_tokens,
+        title="Number of unique tokens over time"
+    ))
 
 st.write(f"""
 **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
