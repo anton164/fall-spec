@@ -225,6 +225,10 @@ try:
         mstream_decomposed_scores_file,
         mstream_decomposed_p_scores_file
     )
+    df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
+        lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
+        axis=1
+    )
 except Exception as e:
     st.error(f"Failed to load MStream output for {dataset_name}")
     raise e
@@ -235,7 +239,7 @@ fig = go.Figure()
 show_mstream_input = st.button("Show MStream input")
 if show_mstream_input:
     st.subheader("MStream input")
-    st.write(df_mstream_input.head())
+    st.write(df_mstream_input)
 
     df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
     unique_tokens = set()
@@ -250,7 +254,7 @@ if show_mstream_input:
         unique_tokens=(
             'text', 
             lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
-        ),
+        ),  
     )
     st.write(px.line(
         df_unique_tokens.unique_tokens,
