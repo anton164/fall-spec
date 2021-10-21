@@ -52,7 +52,7 @@ CountQueryResponse = TypedDict("CountQueryResponse", {
     "data": List[CountQueryData]
 })
 
-@st.cache(allow_output_mutation=True)
+
 def fetch_historical_counts(query_params: CountQueryParams, paginated=False) -> CountQueryResponse:
     response: CountQueryResponse = authenticated_request(
         "https://api.twitter.com/2/tweets/counts/all",
@@ -75,6 +75,9 @@ def fetch_historical_counts(query_params: CountQueryParams, paginated=False) -> 
     
     return response
 
+@st.cache(allow_output_mutation=True)
+def st_fetch_historical_counts(query_params: CountQueryParams, paginated=False) -> CountQueryResponse:
+    return fetch_historical_counts(query_params, paginated)
 
 
 # Documentation: https://developer.twitter.com/en/docs/twitter-api/tweets/search/api-reference/get-tweets-search-all
@@ -167,4 +170,29 @@ def fetch_historical_tweets(
         else:
             response["meta"]["next_token"] = next_response["meta"]["next_token"]
     progress_bar.empty()
+    return response
+
+
+def fetch_users(usernames: List[str]):
+    tweet_fields = [
+        "public_metrics"
+    ]
+    user_fields = [
+        "created_at",
+        "description",
+        "public_metrics",
+        "verified",
+        "name",
+        "location"
+    ]
+    
+    query_params = {
+        "usernames": ",".join(usernames),
+        "tweet.fields": ",".join(tweet_fields),
+        "user.fields": ",".join(user_fields)
+    }
+    response = authenticated_request(
+        "https://api.twitter.com/2/users/by",
+        query_params
+    )
     return response

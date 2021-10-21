@@ -15,10 +15,10 @@ st.header("Featurize dataset")
 data_dir = "./data/labeled_datasets"
 selected_dataset = st_select_file(
     "Select dataset",
-    "./data/labeled_datasets",
+    data_dir,
     ".json"
 )
-
+dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
 df_tweets = load_tweet_dataset(selected_dataset)
 merlin_anomaly_threshold = st.number_input("Merlin anomaly threshold", value=1)
 df_tweets["is_anomaly"] = df_tweets["merlion_anomaly_total_count"].apply(lambda x: x > merlin_anomaly_threshold)
@@ -211,37 +211,55 @@ for col in selected_columns:
 st.write(fig)
 
 st.header("Explore MStream Results")
-mstream_scores_file = st_select_file(
-    "Select generated scores", 
-    data_dir="./MStream/data",
-    extension="_score.txt"
-)
-mstream_labels_file = st_select_file(
-    "Select generated labels", 
-    data_dir="./MStream/data",
-    extension="_predictions.txt"
-)
-mstream_decomposed_scores_file = st_select_file(
-    "Select decomposed scores", 
-    data_dir="./MStream/data",
-    extension="_decomposed.txt"
-)
-mstream_decomposed_p_scores_file = st_select_file(
-    "Select decomposed scores", 
-    data_dir="./MStream/data",
-    extension="_decomposed_percentage.txt"
-)
-df_tweets_with_mstream_output = load_mstream_predictions(
-    df_tweets,
-    mstream_scores_file,
-    mstream_labels_file,
-    mstream_decomposed_scores_file,
-    mstream_decomposed_p_scores_file
-)
+mstream_scores_file = f"./MStream/data/{dataset_name}_score.txt"
+mstream_labels_file = f"./MStream/data/{dataset_name}_predictions.txt"
+mstream_decomposed_scores_file = f"./MStream/data/{dataset_name}_decomposed.txt"
+mstream_decomposed_p_scores_file = f"./MStream/data/{dataset_name}_decomposed_percentage.txt"
+
+try:
+    df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle")
+    df_tweets_with_mstream_output = load_mstream_predictions(
+        df_tweets,
+        mstream_scores_file,
+        mstream_labels_file,
+        mstream_decomposed_scores_file,
+        mstream_decomposed_p_scores_file
+    )
+    df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
+        lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
+        axis=1
+    )
+except Exception as e:
+    st.error(f"Failed to load MStream output for {dataset_name}")
+    raise e
 
 fig = go.Figure()
 
-st.write(df_tweets.head())
+
+show_mstream_input = st.button("Show MStream input")
+if show_mstream_input:
+    st.subheader("MStream input")
+    st.write(df_mstream_input)
+
+    df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
+    unique_tokens = set()
+    def unique_tokens_over_time(text):
+        if pd.notna(text):
+            for token in text.split(" "):
+                unique_tokens.add(token)            
+        return len(unique_tokens)
+    df_unique_tokens = df_mstream_input.groupby(
+        df_mstream_input.created_at.dt.ceil(time_bucket_size)
+    ).agg(
+        unique_tokens=(
+            'text', 
+            lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
+        ),  
+    )
+    st.write(px.line(
+        df_unique_tokens.unique_tokens,
+        title="Number of unique tokens over time"
+    ))
 
 st.write(f"""
 **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  

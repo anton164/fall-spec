@@ -48,17 +48,12 @@ def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file
                     tweet_id_decomposed_p_score_map[tweet_id.strip()] = np.zeros(len(tmpValue))
                 tweet_id_decomposed_p_score_map[tweet_id.strip()] += np.array(scores_decomposed_p.split('\n')[0].split(',')).astype(float)
 
-    # score_a = np.random.random(len(df_tweets))
-    # score_b = np.random.random(len(df_tweets))
-    # df_tweets["mstream_anomaly_score_a"] = score_a
-    # df_tweets["mstream_anomaly_score_b"] = score_b
-
     
 
     df_tweets["mstream_anomaly_score"] = df_tweets["id"].apply(
         lambda tweet_id: tweet_id_score_map[tweet_id]
     )
-    #df_tweets["mstream_is_anomaly"] = df_tweets["mstream_anomaly_score"] > 0.5
+
     df_tweets["mstream_is_anomaly"] = df_tweets["id"].apply(
         lambda tweet_id: tweet_id_label_map[tweet_id]
     )
@@ -77,3 +72,5 @@ def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file
     df_tweets['mstream_decomposed_p_anomaly_score_z'] = df_tweets['mstream_decomposed_p_anomaly_score']*df_tweets['mstream_anomaly_score']
     decomposed_p_scores_columns = generate_scores_columns('mstream_decomposed_p_anomaly_score', len(df_tweets['mstream_decomposed_anomaly_score'].iloc[0]))
     df_tweets[decomposed_p_scores_columns] = pd.DataFrame(df_tweets['mstream_decomposed_p_anomaly_score_z'].tolist(), index= df_tweets.index)
+
+    return df_tweets.set_index("id")

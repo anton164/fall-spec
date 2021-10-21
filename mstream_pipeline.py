@@ -6,36 +6,25 @@ pipeline for a labeled dataset
 """
 
 
-import argparse
 import os
-
-from create_embeddings import tokenize_dataframe_fasttext
 from utils.dataset import load_tweet_dataset
+import subprocess
+from prepare_mstream_data import parser
+
+def run_command(cmd: str):
+    print("[Command]:", cmd)
+    return subprocess.run(cmd.split(" "), check=True)
+
 
 CUR_DIR = os.getcwd()
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './data/embeddings/'
-
-parser = argparse.ArgumentParser()
 
 parser.add_argument(
     'input_file',  
     help='Input file'
 )
 
-parser.add_argument(
-    '--include_text', 
-    required=False,
-    default=False,
-    help='Output name'
-)
-parser.add_argument(
-    '--merlion_anomaly_threshold', 
-    required=False,
-    default=1,
-    type=float,
-    help='Anomaly threshold for merlion labels (passed to prepare_mstream_data)'
-)
 parser.add_argument(
     '--mstream_alpha', 
     required=False,
@@ -45,6 +34,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+print("Args", args)
 output_name = args.input_file.replace(".json", "")
 
 print("Loading tweet dataset...")
@@ -52,24 +42,22 @@ df = load_tweet_dataset(
     INPUT_DATA_LOCATION + args.input_file
 ).set_index("id")
 
-# Prepare embeddings
-if (args.include_text):
-    print("Tokenizing dataframe...")
-    vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
-        df
-    )
-
 # Convert labeled dataset to mstream dataset
-print("Preparing Mstream data...")
-os.system(
-    f"python prepare_mstream_data.py {args.input_file} {output_name} --anomaly_threshold {args.merlion_anomaly_threshold}"
-)
+run_command(" ".join([
+    "python prepare_mstream_data.py",
+    f"{args.input_file} {output_name}",
+    f"--merlion_anomaly_threshold {args.merlion_anomaly_threshold}",
+    f"--text_encoding {args.text_encoding}",
+    f"--text_synthetic {args.text_synthetic}",
+    f"--hashtag_encoding {args.hashtag_encoding}",
+    f"--hashtag_filter {args.hashtag_filter}",
+]))
 
 # Run MStream
 os.chdir("mstream/mstream")
 print("Compiling MStream...")
-os.system("make clean")
-os.system("make")
+run_command("make clean")
+run_command("make")
 os.chdir("..")
 cmd = " ".join([
     "mstream/mstream",
@@ -82,7 +70,7 @@ cmd = " ".join([
     f"-dp 'data/{output_name}_decomposed_percentage.txt'",
     f"-a {args.mstream_alpha}"
 ])
-print("Running MStream...", cmd)
+print("Running MSTREAM...")
 os.system(cmd)
 os.system(
     " ".join([
@@ -93,3 +81,4 @@ os.system(
     ])
 )
 os.chdir(CUR_DIR)
+print(f"Wrote final results to data/{output_name}")
