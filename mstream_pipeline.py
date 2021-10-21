@@ -50,6 +50,7 @@ run_command(" ".join([
     f"--text_encoding {args.text_encoding}",
     f"--text_synthetic {args.text_synthetic}",
     f"--hashtag_encoding {args.hashtag_encoding}",
+    f"--hashtag_filter {args.hashtag_filter}",
 ]))
 
 # Run MStream

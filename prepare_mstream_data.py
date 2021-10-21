@@ -43,6 +43,13 @@ parser.add_argument(
     help='Type of hashtag encoding [None, Categorical]'
 )
 
+parser.add_argument(
+    '--hashtag_filter', 
+    required=False,
+    default="",
+    help='Comma-separated hashtag filter'
+)
+
 if __name__ == "__main__":
     parser.add_argument(
         'input_file',  
@@ -115,10 +122,14 @@ if __name__ == "__main__":
             df
         )
 
+    def include_hashtag(hashtag):
+        return args.hashtag_filter == "" or hashtag in args.hashtag_filter.split(",")
+
+
     # Hashtag feature encoding
     if (args.hashtag_encoding == "Categorical"):
         print("Encoding hashtags as a categorical feature...")
-        df['hashtags'] = df['hashtags'].apply(lambda xs: [x.lower() for x in xs])
+        df['hashtags'] = df['hashtags'].apply(lambda xs: [x.lower() for x in xs if include_hashtag(x.lower())])
         df = df.explode('hashtags')
         symbolic_index.append('hashtags')
 
