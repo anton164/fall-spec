@@ -17,16 +17,19 @@ from utils.nlp import construct_vocabulary_encoding, preprocess_text
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './data/embeddings/'
 
-def tokenize_dataframe_fasttext(df):
-    print("Preprocessing text...")
-    df['text_tokenized'] = df['text'].apply(lambda x: 
-        preprocess_text(x)
-    )
+def tokenize_dataframe_fasttext(df, process_text=True):
+    if process_text:
+        print("Preprocessing text...")
+        df['text_tokenized'] = df['text'].apply(lambda x: 
+            preprocess_text(x)
+        )
+    else:
+        df['text_tokenized'] = df['text']
     print("Loading embeddings...")
-    fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec')
+    fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec', limit=100)
     print("Constructing vocabulary from dataframe...")
     return construct_vocabulary_encoding(
-        df[["text_tokenized"]],
+        df["text_tokenized"].tolist(),
         fasttext
     )
 

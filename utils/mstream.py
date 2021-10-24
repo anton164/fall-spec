@@ -35,18 +35,18 @@ def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file
     with open(mstream_tweetids_file, "r") as tweetids_f:
         with open(mstream_decomposed_scores_file, "r") as scores_decomposed_f:
             for (tweet_id, scores_decomposed) in zip(tweetids_f, scores_decomposed_f):
-                tmpValue = np.array(scores_decomposed.split('\n')[0].split(',')).astype(float)
+                tmpValue = np.array(' '.join(scores_decomposed.split('\n')[0].split(',')).split()).astype(float)
                 if len(tweet_id_decomposed_score_map[tweet_id.strip()]) == 0:
                     tweet_id_decomposed_score_map[tweet_id.strip()] = np.zeros(len(tmpValue))
-                tweet_id_decomposed_score_map[tweet_id.strip()] += np.array(scores_decomposed.split('\n')[0].split(',')).astype(float)
+                tweet_id_decomposed_score_map[tweet_id.strip()] += tmpValue
     
     with open(mstream_tweetids_file, "r") as tweetids_f:
         with open(mstream_decomposed_p_scores_file, "r") as scores_decomposed_p_f:
             for (tweet_id, scores_decomposed_p) in zip(tweetids_f, scores_decomposed_p_f):
-                tmpValue = np.array(scores_decomposed_p.split('\n')[0].split(',')).astype(float)
+                tmpValue = np.array(' '.join(scores_decomposed_p.split('\n')[0].split(',')).split()).astype(float)
                 if len(tweet_id_decomposed_p_score_map[tweet_id.strip()]) == 0:
                     tweet_id_decomposed_p_score_map[tweet_id.strip()] = np.zeros(len(tmpValue))
-                tweet_id_decomposed_p_score_map[tweet_id.strip()] += np.array(scores_decomposed_p.split('\n')[0].split(',')).astype(float)
+                tweet_id_decomposed_p_score_map[tweet_id.strip()] += tmpValue
 
     
 

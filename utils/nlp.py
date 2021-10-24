@@ -5,8 +5,9 @@ from nltk.stem import WordNetLemmatizer, PorterStemmer
 import nltk
 from nltk.tokenize import word_tokenize
 
-nltk.download('words')
-nltk.download('punkt')
+# uncomment in new env
+#nltk.download('words')
+#nltk.download('punkt')
 
 words = set(nltk.corpus.words.words())
 stop_words = set(stopwords.words('english'))
@@ -51,6 +52,7 @@ def construct_vocabulary_encoding(
     vocabulary = {}
     fasttext_subset = {}
     tokenized_string_idxs = []
+    tokenized_strings = tokenized_strings
     for tokens in tokenized_strings:
         idxs = []
         tokenized_string_idxs.append(idxs)
@@ -67,7 +69,6 @@ def construct_vocabulary_encoding(
             else:
                 vocabulary[token]["occurrences"] += 1
             idxs.append(vocabulary[token]["idx"])
-
     return vocabulary, tokenized_string_idxs, fasttext_subset
 
 
