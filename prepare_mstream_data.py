@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     df = load_tweet_dataset(
         INPUT_DATA_LOCATION + args.input_file
-    ).set_index("id")[:100]
+    ).set_index("id")
 
     def create_unix(x):
         return int(time.mktime((x).timetuple()))
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         if word not in fasttext_dr:
             return UNK
         else:
-            return fasttext_dr['word']
+            return fasttext_dr[word]
 
     # Load labels from merlion
     anomaly_threshold = args.merlion_anomaly_threshold
@@ -155,7 +155,6 @@ if __name__ == "__main__":
                     symbolic_index.append('hashtags')
             if col == "text":
                 # Text feature encoding
-                
                 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
                 processed_df = pd.concat([processed_df, tmp_df])
@@ -168,7 +167,7 @@ if __name__ == "__main__":
                     #raise Exception("UMAP not implemented")
                     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
                         df,
-                        True
+                        False
                     )
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
                     reduced_fasttext = basic_umap_dr(fasttext_lookup_df)
@@ -177,7 +176,7 @@ if __name__ == "__main__":
                     values_list = [item for sublist in reduced_fasttext for item in sublist]
                     zip_iterator = zip(keys_list, values_list)
                     fasttext_dr = dict(zip_iterator)
-                    processed_df.apply(map_word_to_umap, ar=(fasttext_dr))
+                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr)
                     continuous_index.append('text')
                     print(processed_df)
                     

@@ -23,6 +23,8 @@ def lemmatizing(words):
     lemmatizer = WordNetLemmatizer()
     return [lemmatizer.lemmatize(word) for word in words]
 
+def lower_text(words):
+    return [word.lower() for word in words]
 
 def cleaner(tweet):
     tweet = ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)"," ",tweet).split())
@@ -36,13 +38,28 @@ def final_text(words):
 def preprocess_text(
     text: str,
     tokenize=True,
-    lower=True
+    lower=True,
+    clean=True,
+    lemmatize=True,
+    stem=True,
+    stop_words=True
 ):
     """ Helper method for parametrizing text preprocessing """
+    if clean:
+        text = cleaner(text)
+    text = word_tokenize(text)
     if lower:
-        text = text.lower()
+        text = lower_text(text)
+    if lemmatize:
+        text = lemmatizing(text)
+    if stem:
+        text = stemming(text)
+    if stop_words:
+        text = remove_stop_words(text)
     if tokenize:
-        return word_tokenize(text)
+        return text
+    return final_text(text)
+    
 
 def construct_vocabulary_encoding(
     tokenized_strings,
