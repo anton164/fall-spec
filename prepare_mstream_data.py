@@ -161,7 +161,6 @@ if __name__ == "__main__":
                     if other_col != col:
                         tmp_df[other_col] = 0
                 processed_df = pd.concat([processed_df, tmp_df])
-                print(df['text'])
                 if (args.text_encoding == "Categorical"):
                     print("Encoding text as a categorical feature...")
                     symbolic_index.append('text')
@@ -187,8 +186,6 @@ if __name__ == "__main__":
     df_symbolic = processed_df.loc[:, symbolic_index]
     df_label = processed_df.loc[:, ['is_anomaly']]
 
-    print(df_continuous)
-
 
     for feature in symbolic_index:
         categorical_feat_dict = {}
@@ -203,7 +200,6 @@ if __name__ == "__main__":
     df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
     df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)
     df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
-    print(continuous_index+symbolic_index)
 
     processed_df.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
     processed_df.loc[:,'created_at'] = pd.to_datetime(processed_df['created_at']).dt.floor(str(args.window_size) + 'T')
@@ -211,8 +207,8 @@ if __name__ == "__main__":
     processed_df.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_score_record.txt", index=False, header=False)
 
     # save columns used
-    column_names_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_column_scores.txt", "w")
-    n = column_names_file.write(",".join(continuous_index+symbolic_index))
+    column_names_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_columns.txt", "w")
+    n = column_names_file.write(",".join([s + "_score" for s in ['record']+continuous_index+symbolic_index]))
     column_names_file.close()
 
     # Don't reeally need this anymore, unless we decide to experiment without numeric values

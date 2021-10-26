@@ -1,7 +1,8 @@
 from utils.mstream import load_mstream_predictions
 from utils.st_utils import st_select_file
-from utils.dataset import count_array_column, load_tweet_dataset
+from utils.dataset import count_array_column, load_tweet_dataset, read_columns
 import streamlit as st
+from streamlit_plotly_events import plotly_events
 import os
 import plotly.express as px
 import plotly.graph_objects as go
@@ -215,6 +216,7 @@ mstream_scores_file = f"./MStream/data/{dataset_name}_score.txt"
 mstream_labels_file = f"./MStream/data/{dataset_name}_predictions.txt"
 mstream_decomposed_scores_file = f"./MStream/data/{dataset_name}_decomposed.txt"
 mstream_decomposed_p_scores_file = f"./MStream/data/{dataset_name}_decomposed_percentage.txt"
+columns_names_file = f"./MStream/data/{dataset_name}_columns.txt"
 
 try:
     df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle")
@@ -223,7 +225,8 @@ try:
         mstream_scores_file,
         mstream_labels_file,
         mstream_decomposed_scores_file,
-        mstream_decomposed_p_scores_file
+        mstream_decomposed_p_scores_file,
+        columns_names_file
     )
     df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
         lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
@@ -299,27 +302,17 @@ fig.add_trace(
     )
 )
 for i, val in enumerate(df_tweets.columns):
-    if 'mstream_decomposed_anomaly_score' in val:
+    if val in read_columns(columns_names_file):
         fig.add_trace(
             go.Scatter(
                 x=df_tweets.created_at,
                 y=df_tweets[val],
                 mode='lines',
-                name=val,
-                opacity=0.5
+                name=" ".join(val.split('_')),
+                opacity=0.5,
+                hovertext=df_tweets["hashtags"].apply(lambda x: ','.join(map(str, x))).tolist()
             )
         )
-
-for i, val in enumerate(df_tweets.columns):
-    if 'mstream_decomposed_p_anomaly_score'  in val:
-        fig.add_trace(
-            go.Scatter(
-                x=df_tweets.created_at,
-                y=df_tweets[val],
-                mode='lines',
-                name=val,
-                opacity=0.5
-            )
-        )
-
-st.write(fig)
+selected_points = plotly_events(fig)
+print(selected_points)
+#st.write(fig)

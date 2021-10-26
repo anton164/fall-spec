@@ -12,6 +12,11 @@ def get_with_default(obj, keys, default):
             return default
     return obj
 
+def read_columns(columns_names_file):
+    with open(columns_names_file) as f:
+        first_line = f.readline()
+    return first_line.split(",")
+
 def create_tweet_df(raw_dataset_tweets):
     """ Create tweet dataset dataframe from raw tweet objects response """
     tweets = []

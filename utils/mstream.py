@@ -2,19 +2,16 @@ from collections import defaultdict
 from os import error
 import numpy as np
 import pandas as pd
+from utils.dataset import read_columns
 
 def str_to_bool(s):
     if s == "True\n":
         return 1
     else:
         return 0
-def generate_scores_columns(column_name, size):
-    columns = []
-    for i in range(size):
-        columns.append(column_name + '_' + str(i))
-    return columns
 
-def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file, mstream_decomposed_scores_file, mstream_decomposed_p_scores_file):
+
+def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file, mstream_decomposed_scores_file, mstream_decomposed_p_scores_file, columns_names_file):
     mstream_tweetids_file = mstream_scores_file.replace("_score.txt", "_tweet_id.txt")
 
     tweet_id_score_map = defaultdict(lambda: 0)
@@ -65,12 +62,9 @@ def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file
         lambda tweet_id: tweet_id_decomposed_p_score_map[tweet_id]
     )
 
-    decomposed_scores_columns = generate_scores_columns('mstream_decomposed_anomaly_score', len(df_tweets['mstream_decomposed_anomaly_score'].iloc[0]))
-    df_tweets[decomposed_scores_columns] = pd.DataFrame(df_tweets['mstream_decomposed_anomaly_score'].tolist(), index= df_tweets.index)
-
     df_tweets['mstream_decomposed_p_anomaly_score'] = df_tweets['mstream_decomposed_p_anomaly_score'].apply(lambda x: x/np.sum(x))
-    df_tweets['mstream_decomposed_p_anomaly_score_z'] = df_tweets['mstream_decomposed_p_anomaly_score']*df_tweets['mstream_anomaly_score']
-    decomposed_p_scores_columns = generate_scores_columns('mstream_decomposed_p_anomaly_score', len(df_tweets['mstream_decomposed_anomaly_score'].iloc[0]))
-    df_tweets[decomposed_p_scores_columns] = pd.DataFrame(df_tweets['mstream_decomposed_p_anomaly_score_z'].tolist(), index= df_tweets.index)
+    df_tweets['mstream_decomposed_p_anomaly_score_tmp'] = df_tweets['mstream_decomposed_p_anomaly_score']*df_tweets['mstream_anomaly_score']
+    decomposed_p_scores_columns = read_columns(columns_names_file)
+    df_tweets[decomposed_p_scores_columns] = pd.DataFrame(df_tweets['mstream_decomposed_p_anomaly_score_tmp'].tolist(), index= df_tweets.index)
 
     return df_tweets.set_index("id")
