@@ -12,7 +12,7 @@ import random
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
-UNK = -10
+UNK = 0
 
 parser = argparse.ArgumentParser()
 
@@ -142,21 +142,24 @@ if __name__ == "__main__":
     else:
         processed_df = pd.DataFrame(columns = base_columns)
         for col in extra_columns:
-            for other_col in extra_columns:
-                if other_col != col:
-                    tmp_df[other_col] = 0
             # Hashtag feature encoding
             if col == "hashtags":
                 if (args.hashtag_encoding == "Categorical"):
                     print("Encoding hashtags as a categorical feature...")
                     df['hashtags'] = df['hashtags'].apply(lambda xs: [x.lower() for x in xs if include_hashtag(x.lower())])
                     tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                    for other_col in extra_columns:
+                        if other_col != col:
+                            tmp_df[other_col] = 0
                     processed_df = pd.concat([processed_df, tmp_df])
                     symbolic_index.append('hashtags')
             if col == "text":
                 # Text feature encoding
                 df['text'] = df['text'].apply(lambda x: preprocess_text(x))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                for other_col in extra_columns:
+                    if other_col != col:
+                        tmp_df[other_col] = 0
                 processed_df = pd.concat([processed_df, tmp_df])
                 print(df['text'])
                 if (args.text_encoding == "Categorical"):
@@ -178,12 +181,13 @@ if __name__ == "__main__":
                     fasttext_dr = dict(zip_iterator)
                     processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr)
                     continuous_index.append('text')
-                    print(processed_df)
                     
     processed_df = processed_df.sort_values(by=['id', 'created_at'], ascending = (True, True))
     df_continuous = processed_df.loc[:, continuous_index]
     df_symbolic = processed_df.loc[:, symbolic_index]
     df_label = processed_df.loc[:, ['is_anomaly']]
+
+    print(df_continuous)
 
 
     for feature in symbolic_index:
@@ -199,13 +203,20 @@ if __name__ == "__main__":
     df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
     df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)
     df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
+    print(continuous_index+symbolic_index)
 
     processed_df.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
     processed_df.loc[:,'created_at'] = pd.to_datetime(processed_df['created_at']).dt.floor(str(args.window_size) + 'T')
     processed_df.loc[:,'created_at'].map(create_unix).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
     processed_df.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_score_record.txt", index=False, header=False)
 
-    text_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", "w")
+    # save columns used
+    column_names_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_column_scores.txt", "w")
+    n = column_names_file.write(",".join(continuous_index+symbolic_index))
+    column_names_file.close()
+
+    # Don't reeally need this anymore, unless we decide to experiment without numeric values
+    '''text_file = open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", "w")
     df_symbolic.shape[0]
     n = text_file.write('\n'*df_symbolic.shape[0])
-    text_file.close()
+    text_file.close()'''

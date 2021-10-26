@@ -63,22 +63,26 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
 
         double sum = 0.0, t, cur_score;
         for (int node_iter = 0; node_iter < dimension1; node_iter++) {
-            cur_numeric[node_iter] = log10(1 + cur_numeric[node_iter]);
-            if (!i) {
-                max_numeric[node_iter] = cur_numeric[node_iter];
-                min_numeric[node_iter] = cur_numeric[node_iter];
-                cur_numeric[node_iter] = 0;
-            } else {
-                min_numeric[node_iter] = MIN(min_numeric[node_iter], cur_numeric[node_iter]);
-                max_numeric[node_iter] = MAX(max_numeric[node_iter], cur_numeric[node_iter]);
-                if (max_numeric[node_iter] == min_numeric[node_iter]) cur_numeric[node_iter] = 0;
-                else cur_numeric[node_iter] = (cur_numeric[node_iter] - min_numeric[node_iter]) /
-                                 (max_numeric[node_iter] - min_numeric[node_iter]);
+            if (cur_numeric[node_iter] != 0) {
+                cur_numeric[node_iter] = log10(1 + cur_numeric[node_iter]);
+                if (!i) {
+                    max_numeric[node_iter] = cur_numeric[node_iter];
+                    min_numeric[node_iter] = cur_numeric[node_iter];
+                    cur_numeric[node_iter] = 0;
+                } else {
+                    min_numeric[node_iter] = MIN(min_numeric[node_iter], cur_numeric[node_iter]);
+                    max_numeric[node_iter] = MAX(max_numeric[node_iter], cur_numeric[node_iter]);
+                    if (max_numeric[node_iter] == min_numeric[node_iter]) cur_numeric[node_iter] = 0;
+                    else cur_numeric[node_iter] = (cur_numeric[node_iter] - min_numeric[node_iter]) /
+                                    (max_numeric[node_iter] - min_numeric[node_iter]);
+                }
+                numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
+                numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
+                t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
+                                numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t);
             }
-            numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
-            numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
-            t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
-                               numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t);
+            else t = 0;
+            decomposed_scores.push_back(t);
             sum = sum+t;
         }
         cur_count.insert(cur_numeric, cur_categ, 1);
@@ -98,7 +102,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         }
         if (ignore[i] == 0) {
             cur_score = counts_to_anom(total_count.get_count(cur_numeric, cur_categ),
-                                       cur_count.get_count(cur_numeric, cur_categ), cur_t);            
+                                       cur_count.get_count(cur_numeric, cur_categ), cur_t);
         } else {
             cur_score = 0;
         }
@@ -106,10 +110,19 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         std::ostringstream stream;
         std::ostringstream stream_2;
         stream << log(1 + cur_score) << ',';
-        stream_2 << cur_score/sum << ',';
+        if (cur_score == 0) {
+            stream_2 << cur_score << ',';
+        } else {
+            stream_2 << cur_score/sum << ',';
+        }
+        
         for (int i = 0; i < decomposed_scores.size(); i++) {
             stream << std::to_string(log(1 + decomposed_scores[i]));
-            stream_2 << std::to_string(decomposed_scores[i]/sum);
+            if (sum == 0) {
+                stream_2 << std::to_string(0);
+            } else {
+                stream_2 << std::to_string(decomposed_scores[i]/sum);
+            }
             if (i != decomposed_scores.size() - 1) {
                 stream << ',';
                 stream_2 << ',';

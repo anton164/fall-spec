@@ -27,6 +27,7 @@ def tokenize_dataframe_fasttext(df, process_text=True):
         df['text_tokenized'] = df['text']
     print("Loading embeddings...")
     fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec', limit=100)
+    #fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec')
     print("Constructing vocabulary from dataframe...")
     return construct_vocabulary_encoding(
         df["text_tokenized"].tolist(),
