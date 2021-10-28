@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from utils.dtypes import tweet_dtypes
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from utils.nlp import cleaner
 
 st.header("Featurize dataset")
 
@@ -302,8 +303,18 @@ fig.add_trace(
     )
 )
 for i, val in enumerate(df_tweets.columns):
-    if val in read_columns(columns_names_file) and val != 'record_score':
-        hovertext = df_tweets[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
+    if val == 'record_score':
+        fig.add_trace(
+            go.Scatter(
+                x=df_tweets.created_at,
+                y=df_tweets[val],
+                mode='lines',
+                name=" ".join(val.split('_')),
+                opacity=0.5,
+            )
+        )
+    elif val=='text_score':
+        hovertext = df_tweets[val.split('_')[0]].apply(lambda x: str(x[0:20])+'...'+'\n count: '+str(len(x.split(' ')))).tolist()
         fig.add_trace(
             go.Scatter(
                 x=df_tweets.created_at,
@@ -314,5 +325,56 @@ for i, val in enumerate(df_tweets.columns):
                 hovertext=hovertext
             )
         )
+    elif val=='hashtags_score':
+        hovertext = df_tweets[val.split('_')[0]].apply(lambda x: str(x[0:4])+'...'+'\n count: '+str(len(x))).tolist()
+        fig.add_trace(
+            go.Scatter(
+                x=df_tweets.created_at,
+                y=df_tweets[val],
+                mode='lines',
+                name=" ".join(val.split('_')),
+                opacity=0.5,
+                hovertext=hovertext
+            )
+        )
+st.header("Selected data point info")
+
 selected_points = plotly_events(fig)
+if len(selected_points) > 0 and 'pointIndex' in selected_points[0]:
+    text_selected = cleaner(df_tweets['text'].iloc[[selected_points[0]['pointIndex']]].tolist()[0])
+    hashtags_selected = df_tweets['hashtags'].iloc[[selected_points[0]['pointIndex']]].tolist()[0]
+    tweet_id_selected = df_tweets['id'].iloc[[selected_points[0]['pointIndex']]].tolist()[0]
+    tokens_to_explore = hashtags_selected + cleaner(text_selected).split(" ")
+    st.subheader('Tweet ID')
+    st.text(tweet_id_selected)
+    st.subheader('Text')
+    st.text(text_selected)
+    st.subheader('Clean Text')
+    st.text(cleaner(text_selected))
+    st.subheader('Hashtags')
+    st.text("Size: " + str(len(hashtags_selected)))
+    st.text(hashtags_selected)
+    #time_bucket_size_selected = st.text_input("Time bucket size", value="30Min") 
+    selected_columns_selected = st.multiselect(
+        "Select hashtags and/or word tokens",
+        options=tokens_to_explore,
+    )
+    fig = go.Figure()
+    for col in selected_columns_selected:
+        selection = [col]
+        filtered_df_tweets = df_tweets[pd.DataFrame(df_tweets['hashtags'].tolist()).isin(selection).any(1).values]
+        filtered_df_tweets = filtered_df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)).agg(
+            total_count=('id', 'count'),
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=filtered_df_tweets.index,
+                y=filtered_df_tweets['total_count'],
+                mode='lines',
+                name=col
+            )
+        )
+    st.write(fig)
+    
+    
 #st.write(fig)
