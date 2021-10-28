@@ -302,7 +302,8 @@ fig.add_trace(
     )
 )
 for i, val in enumerate(df_tweets.columns):
-    if val in read_columns(columns_names_file):
+    if val in read_columns(columns_names_file) and val != 'record_score':
+        hovertext = df_tweets[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
         fig.add_trace(
             go.Scatter(
                 x=df_tweets.created_at,
@@ -310,9 +311,8 @@ for i, val in enumerate(df_tweets.columns):
                 mode='lines',
                 name=" ".join(val.split('_')),
                 opacity=0.5,
-                hovertext=df_tweets["hashtags"].apply(lambda x: ','.join(map(str, x))).tolist()
+                hovertext=hovertext
             )
         )
 selected_points = plotly_events(fig)
-print(selected_points)
 #st.write(fig)
