@@ -92,7 +92,7 @@ cd MStream
 
 ## 9) Inspect MStream results
 ```
-streamlit run st_featurize_tweets.py
+streamlit run st_main.py
 ```
 
 - Reads from `data/tweet_objects` 
