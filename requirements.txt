@@ -13,3 +13,4 @@ matplotlib
 salesforce-merlion
 salesforce-merlion[plot]
 umap-learn
+streamlit-plotly-events
