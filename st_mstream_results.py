@@ -44,6 +44,16 @@ def render_mstream_results():
             lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
             axis=1
         )
+        if "text_score" in df_tweets_with_mstream_output.columns:
+            df_mstream_input["mstream_text_score"] = df_mstream_input.apply(
+                lambda t: df_tweets_with_mstream_output.loc[t.name].text_score,
+                axis=1
+            )
+        if "hashtag_score" in df_tweets_with_mstream_output.columns:
+            df_mstream_input["mstream_hashtag_score"] = df_mstream_input.apply(
+                lambda t: df_tweets_with_mstream_output.loc[t.name].hashtag_score,
+                axis=1
+            )
     except Exception as e:
         st.error(f"Failed to load MStream output for {dataset_name}")
         raise e
@@ -59,9 +69,8 @@ def render_mstream_results():
         df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
         unique_tokens = set()
         def unique_tokens_over_time(text):
-            if pd.notna(text):
-                for token in text.split(" "):
-                    unique_tokens.add(token)            
+            for token in text:
+                unique_tokens.add(token)            
             return len(unique_tokens)
         df_unique_tokens = df_mstream_input.groupby(
             df_mstream_input.created_at.dt.ceil(time_bucket_size)
