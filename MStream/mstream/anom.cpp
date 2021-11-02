@@ -12,14 +12,14 @@
 #include "recordhash.hpp"
 #include "categhash.hpp"
 
-double counts_to_anom(double tot, double cur, int cur_t) {
-    double cur_mean = tot / cur_t;
+double counts_to_anom(double tot, double cur, int cur_t, int smoothing_factor) {
+    double cur_mean = MAX(tot / cur_t, smoothing_factor);
 	double sqerr = pow(MAX(0, cur - cur_mean), 2);
     return sqerr / cur_mean + sqerr / (cur_mean * MAX(1, cur_t - 1));
 }
 
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
-                        int num_buckets, double factor, int dimension1, int dimension2, vector<string> &scores_decomposed, vector<string> &scores_decomposed_p) {
+                        int num_buckets, double factor, int smoothing_factor, int dimension1, int dimension2, vector<string> &scores_decomposed, vector<string> &scores_decomposed_p) {
 
     int length = times.size(), cur_t = 1;
 
@@ -79,7 +79,8 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
                 numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
                 t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
-                                numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t);
+                                numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t,
+                                smoothing_factor);
             }
             else t = 0;
             decomposed_scores.push_back(t);
@@ -95,14 +96,16 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 t = 0;
             } else {
                 t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
-                                   categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t);                
+                                   categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t,
+                                   smoothing_factor);                
             }
             decomposed_scores.push_back(t);
             sum = sum+t;
         }
         if (ignore[i] == 0) {
             cur_score = counts_to_anom(total_count.get_count(cur_numeric, cur_categ),
-                                       cur_count.get_count(cur_numeric, cur_categ), cur_t);
+                                       cur_count.get_count(cur_numeric, cur_categ), cur_t,
+                                       smoothing_factor);
         } else {
             cur_score = 0;
         }

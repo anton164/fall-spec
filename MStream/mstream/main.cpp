@@ -159,6 +159,10 @@ int main(int argc, const char *argv[]) {
             .default_value(0.8)
             .action([](const std::string &value) { return std::stod(value); })
             .help("Alpha: Temporal Decay Factor. Default is 0.8");
+    program.add_argument("-beta", "--beta")
+            .default_value(0)
+            .action([](const std::string &value) { return std::stoi(value); })
+            .help("Beta: Anomaly Scoring Smoothing Term. Default is 0");
     program.add_argument("-o", "--output").default_value(string("scores.txt")).help(
             "Output File. Default is scores.txt");
     try {
@@ -179,10 +183,16 @@ int main(int argc, const char *argv[]) {
     string decomposed_scores_p_filename = program.get<string>("-dp");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
+    int beta = program.get<int>("-beta");
     auto alpha = program.get<double>("-a");
 
     if (rows < 1) {
         cerr << "Number of numerichash functions should be positive.\n";
+        exit(1);
+    }
+
+    if (beta < 0) {
+        cerr << "Smoothing term can't be negative.\n";
         exit(1);
     }
 
@@ -223,7 +233,7 @@ int main(int argc, const char *argv[]) {
     //vector<double> scores_decomposed = new vector<double>(length);
     std::vector<string> scores_decomposed(length);
     std::vector<string> scores_decomposed_p(length);
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, dimension1, dimension2, scores_decomposed, scores_decomposed_p);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");

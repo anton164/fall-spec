@@ -32,6 +32,20 @@ parser.add_argument(
     type=float,
     help='MStream decay factor'
 )
+parser.add_argument(
+    '--mstream_beta', 
+    required=False,
+    default=0,
+    type=int,
+    help='MStream smoothing term'
+)
+parser.add_argument(
+    '--mstream_buckets', 
+    required=False,
+    default=1024,
+    type=int,
+    help='MStream number of buckets'
+)
 args = parser.parse_args()
 
 print("Args", args)
@@ -68,7 +82,9 @@ cmd = " ".join([
     f"-d 'data/{output_name}_decomposed.txt'",
     f"-i 'data/{output_name}_ignore_score_record.txt'",
     f"-dp 'data/{output_name}_decomposed_percentage.txt'",
-    f"-a {args.mstream_alpha}"
+    f"-a {args.mstream_alpha}",
+    f"-b {args.mstream_buckets}",
+    f"-beta {args.mstream_beta}"
 ])
 print("Running MSTREAM...")
 os.system(cmd)
