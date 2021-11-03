@@ -1,10 +1,16 @@
+from utils.mstream import load_mstream_predictions
 from utils.st_utils import st_select_file
-from utils.dataset import count_array_column, load_tweet_dataset
+from utils.dataset import count_array_column, load_tweet_dataset, read_columns
 import streamlit as st
+from streamlit_plotly_events import plotly_events
+import os
+import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 import pandas as pd
-
-
+from utils.dtypes import tweet_dtypes
+from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from utils.nlp import cleaner, preprocess_text
 
 def render_featurize_tweets():
     st.header("Featurize dataset")
@@ -206,6 +212,193 @@ def render_featurize_tweets():
             )
 
     st.write(fig)
+
+    st.header("Explore MStream Results")
+    mstream_scores_file = f"./MStream/data/{dataset_name}_score.txt"
+    mstream_labels_file = f"./MStream/data/{dataset_name}_predictions.txt"
+    mstream_decomposed_scores_file = f"./MStream/data/{dataset_name}_decomposed.txt"
+    mstream_decomposed_p_scores_file = f"./MStream/data/{dataset_name}_decomposed_percentage.txt"
+    columns_names_file = f"./MStream/data/{dataset_name}_columns.txt"
+
+    try:
+        df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle")
+        df_tweets_with_mstream_output = load_mstream_predictions(
+            df_tweets,
+            mstream_scores_file,
+            mstream_labels_file,
+            mstream_decomposed_scores_file,
+            mstream_decomposed_p_scores_file,
+            columns_names_file
+        )
+        df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
+            lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
+            axis=1
+        )
+    except Exception as e:
+        st.error(f"Failed to load MStream output for {dataset_name}")
+        raise e
+
+    fig = go.Figure()
+
+
+    show_mstream_input = st.button("Show MStream input")
+    if show_mstream_input:
+        st.subheader("MStream input")
+        st.write(df_mstream_input)
+
+        df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
+        unique_tokens = set()
+        def unique_tokens_over_time(text):
+            if pd.notna(text):
+                for token in text.split(" "):
+                    unique_tokens.add(token)            
+            return len(unique_tokens)
+        df_unique_tokens = df_mstream_input.groupby(
+            df_mstream_input.created_at.dt.ceil(time_bucket_size)
+        ).agg(
+            unique_tokens=(
+                'text', 
+                lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
+            ),  
+        )
+        st.write(px.line(
+            df_unique_tokens.unique_tokens,
+            title="Number of unique tokens over time"
+        ))
+
+    st.write(f"""
+    **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
+    **Recall:** {recall_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
+    **F1_score:** {f1_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}
+    """)
+
+    max_mstream_score = df_tweets.mstream_anomaly_score.max()
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_tweets.created_at,
+            y=df_tweets.is_anomaly.astype(int)*max_mstream_score + 20,
+            mode='lines',
+            name="True labels",
+            opacity=0.5
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_tweets.created_at,
+            y=df_tweets.mstream_is_anomaly.astype(int)*max_mstream_score,
+            mode='lines',
+            name="Predicted labels",
+            opacity=0.5
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df_tweets.created_at,
+            y=df_tweets.mstream_anomaly_score,
+            mode='lines',
+            name="Anomaly score",
+            opacity=0.5
+        )
+    )
+    for i, val in enumerate(df_tweets.columns):
+        if val == 'record_score':
+            fig.add_trace(
+                go.Scatter(
+                    x=df_tweets.created_at,
+                    y=df_tweets[val],
+                    mode='lines',
+                    name=" ".join(val.split('_')),
+                    opacity=0.5,
+                )
+            )
+        elif val=='text_score':
+            hovertext = df_tweets[val.split('_')[0]].apply(lambda x: str(x[0:20])+'...'+'\n count: '+str(len(x.split(' ')))).tolist()
+            fig.add_trace(
+                go.Scatter(
+                    x=df_tweets.created_at,
+                    y=df_tweets[val],
+                    mode='lines',
+                    name=" ".join(val.split('_')),
+                    opacity=0.5,
+                    hovertext=hovertext
+                )
+            )
+        elif val=='hashtags_score':
+            hovertext = df_tweets[val.split('_')[0]].apply(lambda x: str(x[0:4])+'...'+'\n count: '+str(len(x))).tolist()
+            fig.add_trace(
+                go.Scatter(
+                    x=df_tweets.created_at,
+                    y=df_tweets[val],
+                    mode='lines',
+                    name=" ".join(val.split('_')),
+                    opacity=0.5,
+                    hovertext=hovertext
+                )
+            )
+    st.header("Selected data point info")
+
+    selected_points = plotly_events(fig)
+    if len(selected_points) > 0 and 'pointIndex' in selected_points[0]:
+        text_selected = preprocess_text(df_tweets['text'].iloc[[selected_points[0]['pointIndex']]].tolist()[0], tokenize=False)
+        hashtags_selected = df_tweets['hashtags'].iloc[[selected_points[0]['pointIndex']]].tolist()[0]
+        tweet_id_selected = df_tweets['id'].iloc[[selected_points[0]['pointIndex']]].tolist()[0]
+        hashtags_to_explore = hashtags_selected
+        text_tokens_to_explore = preprocess_text(text_selected)
+        st.subheader('Tweet ID')
+        st.text(tweet_id_selected)
+        st.subheader('Text')
+        st.text(text_selected)
+        st.subheader('Clean Text')
+        st.text(text_selected)
+        st.subheader('Hashtags')
+        st.text("Size: " + str(len(hashtags_selected)))
+        st.text(hashtags_selected)
+        #time_bucket_size_selected = st.text_input("Time bucket size", value="30Min") 
+        hashtags_columns_selected = st.multiselect(
+            "Select hashtags",
+            options=hashtags_to_explore,
+        )
+        fig = go.Figure()
+        for col in hashtags_columns_selected:
+            selection = [col]
+            filtered_df_tweets = df_tweets[pd.DataFrame(df_tweets['hashtags'].tolist()).isin(selection).any(1).values]
+            filtered_df_tweets = filtered_df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)).agg(
+                total_count=('id', 'count'),
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=filtered_df_tweets.index,
+                    y=filtered_df_tweets['total_count'],
+                    mode='lines',
+                    name=col
+                )
+            )
+        st.write(fig)
+
+
+        text_tokens_columns_selected = st.multiselect(
+            "Select text tokens",
+            options=text_tokens_to_explore,
+        )
+        fig = go.Figure()
+        for col in text_tokens_columns_selected:
+            selection = [col]
+            filtered_df_tweets = df_tweets[pd.DataFrame(df_tweets['text'].apply(lambda x: preprocess_text(x)).tolist()).isin(selection).any(1).values]
+            filtered_df_tweets = filtered_df_tweets.groupby(df_tweets.created_at.dt.ceil(time_bucket_size)).agg(
+                total_count=('id', 'count'),
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=filtered_df_tweets.index,
+                    y=filtered_df_tweets['total_count'],
+                    mode='lines',
+                    name=col
+                )
+            )
+        st.write(fig)
 
 if __name__ == "__main__":
     render_featurize_tweets()
