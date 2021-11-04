@@ -150,25 +150,30 @@ def fetch_historical_tweets(
     while response["meta"]["next_token"] is not None and fetched_pages < n_pages:
         progress_bar.progress(fetched_pages / n_pages)
         # avoid rate-limit (1 per second)
-        time.sleep(1)
-        next_response = authenticated_request(
-            "https://api.twitter.com/2/tweets/search/all",
-            query_params_with_defaults,
-            next_token=response["meta"]["next_token"]
-        )
-        fetched_pages += 1
-        response["data"] += next_response["data"]
-        response["includes"]["users"] += next_response["includes"]["users"]
-        response["includes"]["tweets"] += next_response["includes"]["tweets"]
-        if "errors" in next_response:
-            response["errors"] += next_response["errors"]
-        response["meta"]["result_count"] += next_response["meta"]["result_count"]
+        time.sleep(0.5)
+        try:
+            next_response = authenticated_request(
+                "https://api.twitter.com/2/tweets/search/all",
+                query_params_with_defaults,
+                next_token=response["meta"]["next_token"]
+            )
+            fetched_pages += 1
+            response["data"] += next_response["data"]
+            response["includes"]["users"] += next_response["includes"]["users"]
+            response["includes"]["tweets"] += next_response["includes"]["tweets"]
+            if "errors" in next_response:
+                response["errors"] += next_response["errors"]
+            response["meta"]["result_count"] += next_response["meta"]["result_count"]
 
-        if "next_token" not in next_response["meta"]:
+            if "next_token" not in next_response["meta"]:
+                response["meta"]["next_token"] = None
+                break
+            else:
+                response["meta"]["next_token"] = next_response["meta"]["next_token"]
+        except Exception as e:
+            st.error(e)
             response["meta"]["next_token"] = None
             break
-        else:
-            response["meta"]["next_token"] = next_response["meta"]["next_token"]
     progress_bar.empty()
     return response
 
