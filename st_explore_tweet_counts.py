@@ -36,7 +36,7 @@ def render_explore_tweet_counts():
 
     if explore_type == "Through Twitter UI":
         st.subheader("Explore tweets on Twitter UI for this query")
-        date = st.date_input("Select date")
+        date = st.date_input("Select date", value=datetime(2021, 1, 1))
         start_date = date - relativedelta(days=1)
         end_date = date + relativedelta(days=1)
         min_retweets = st.number_input("Minimum retweets", value=0)
@@ -46,8 +46,8 @@ def render_explore_tweet_counts():
     else:
         st.subheader("Explore historical tweets on Twitter for this query")
         col1, col2 = st.columns(2)
-        start_date = col1.date_input("Start date", value=datetime(2020, 9, 1))
-        end_date = col2.date_input("End date", value=datetime(2020, 9, 1))
+        start_date = col1.date_input("Start date", value=datetime(2021, 1, 1))
+        end_date = col2.date_input("End date", value=datetime(2021, 4, 1))
         include_ner_tags = st.checkbox("Include Context Annotations (NER Tags etc. max 100 per page & slows down fetch)")
         n_pages = st.number_input("Number of pages (~100/500 tweets per page)", value=1)
 
