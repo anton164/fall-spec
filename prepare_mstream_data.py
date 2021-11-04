@@ -196,7 +196,9 @@ if __name__ == "__main__":
         "text",
         "hashtags",
         "created_at"
-    ]].to_pickle(f"{OUTPUT_DATA_LOCATION}{args.output_name}_data.pickle")
+    ]].rename(columns={
+        "text": "tokens"
+    }).to_pickle(f"{OUTPUT_DATA_LOCATION}{args.output_name}_data.pickle")
     df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
     df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)
     df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)

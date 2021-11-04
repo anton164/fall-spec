@@ -30,8 +30,17 @@ def render_mstream_results():
     mstream_decomposed_p_scores_file = f"./MStream/data/{dataset_name}_decomposed_percentage.txt"
     columns_names_file = f"./MStream/data/{dataset_name}_columns.txt"
 
+    SCORE_COLUMNS = [
+        "mstream_anomaly_score",
+        "record_score",
+        "hashtags_score",
+        "text_score"
+    ]
+
     try:
-        df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle")
+        df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle").rename(
+            columns={"text": "tokens"} # backwards-compatibility
+        )
         df_tweets_with_mstream_output = load_mstream_predictions(
             df_tweets,
             mstream_scores_file,
@@ -40,19 +49,19 @@ def render_mstream_results():
             mstream_decomposed_p_scores_file,
             columns_names_file
         )
-        df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
-            lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
-            axis=1
+        present_score_columns = [col for col in SCORE_COLUMNS if col in df_tweets_with_mstream_output.columns]
+        columns = ["raw_tweet_text"] + present_score_columns
+        df_mstream_input[columns] = df_tweets_with_mstream_output[
+            ["text"]
+            + present_score_columns
+        ]
+        df_mstream_input["is_retweet"] = df_mstream_input.apply(
+            lambda t: df_tweets_with_mstream_output.loc[t.name].retweeted is not None
+            , axis=1
         )
-        if "text_score" in df_tweets_with_mstream_output.columns:
-            df_mstream_input["mstream_text_score"] = df_mstream_input.apply(
-                lambda t: df_tweets_with_mstream_output.loc[t.name].text_score,
-                axis=1
-            )
-        if "hashtag_score" in df_tweets_with_mstream_output.columns:
-            df_mstream_input["mstream_hashtag_score"] = df_mstream_input.apply(
-                lambda t: df_tweets_with_mstream_output.loc[t.name].hashtag_score,
-                axis=1
+        if "tokens" in df_mstream_input:
+            df_mstream_input["token_length"] = df_mstream_input.tokens.apply(
+                lambda t: len(t)
             )
     except Exception as e:
         st.error(f"Failed to load MStream output for {dataset_name}")
@@ -68,16 +77,16 @@ def render_mstream_results():
 
         df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
         unique_tokens = set()
-        def unique_tokens_over_time(text):
-            for token in text:
+        def unique_tokens_over_time(tokens):
+            for token in tokens:
                 unique_tokens.add(token)            
             return len(unique_tokens)
         df_unique_tokens = df_mstream_input.groupby(
             df_mstream_input.created_at.dt.ceil(time_bucket_size)
         ).agg(
             unique_tokens=(
-                'text', 
-                lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
+                'tokens', 
+                lambda token_col: token_col.apply(lambda text: unique_tokens_over_time(text)).max()
             ),  
         )
         st.write(px.line(
@@ -137,6 +146,23 @@ def render_mstream_results():
             )
     selected_points = plotly_events(fig)
     #st.write(fig)
+
+    st.subheader("Top Anomalies")
+    present_score_columns = [col for col in SCORE_COLUMNS if col in df_mstream_input.columns]
+    selected_score_column = st.selectbox("By score", options=present_score_columns)
+    n_tweets = st.number_input("Number of tweets to show", value=100)
+    df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
+    st.write(
+        df_top_anoms
+    )
+
+    st.write(f"Percentage of retweets in top {n_tweets}: {df_top_anoms.is_retweet.sum() / df_top_anoms.shape[0]:%}")
+    st.write(f"Percentage of retweets in dataset: {df_mstream_input.is_retweet.sum() / df_mstream_input.shape[0]:%}")
+
+    st.write(f"Average token length in top {n_tweets}: {df_top_anoms.token_length.mean()}")
+    if "token_length" in df_mstream_input:
+        st.write(f"Average token length in dataset: {df_mstream_input.token_length.mean()}")
+
 
 if __name__ == "__main__":
     render_mstream_results()
