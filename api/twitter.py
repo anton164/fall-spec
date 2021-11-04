@@ -45,8 +45,7 @@ CountQueryData = TypedDict("data", {
     "tweet_count": int
 })
 CountQueryResponse = TypedDict("CountQueryResponse", {
-    "
-    eta": TypedDict("meta", {
+    "meta": TypedDict("meta", {
         "total_tweet_count": int,
         "next_token": Union[str, None]
     }),
