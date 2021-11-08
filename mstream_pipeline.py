@@ -65,6 +65,7 @@ run_command(" ".join([
     f"--text_synthetic {args.text_synthetic}",
     f"--hashtag_encoding {args.hashtag_encoding}",
     f"--hashtag_filter {args.hashtag_filter}",
+    f"--unix_timestamp {args.unix_timestamp}",
 ]))
 
 # Run MStream
@@ -84,7 +85,8 @@ cmd = " ".join([
     f"-dp 'data/{output_name}_decomposed_percentage.txt'",
     f"-a {args.mstream_alpha}",
     f"-b {args.mstream_buckets}",
-    f"-beta {args.mstream_beta}"
+    f"-beta {args.mstream_beta}",
+    f"-tb 'data/{output_name}_token_buckets.txt'"
 ])
 print("Running MSTREAM...")
 os.system(cmd)

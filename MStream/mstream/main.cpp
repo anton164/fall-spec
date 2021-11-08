@@ -127,7 +127,6 @@ void load_data(vector<vector<double> > &numeric, vector<vector<long> > &categori
 }
 
 int main(int argc, const char *argv[]) {
-
     argparse::ArgumentParser program("mstream");
     program.add_argument("-n", "--numerical")
             .default_value(string(""))
@@ -147,6 +146,9 @@ int main(int argc, const char *argv[]) {
     program.add_argument("-dp", "--decompose")
             .required()
             .help("Decomposed percentages scores file is required");
+    program.add_argument("-tb", "--token_buckets")
+            .required()
+            .help("Token buckets filename file is required");
     program.add_argument("-r", "--rows")
             .default_value(2)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -181,6 +183,7 @@ int main(int argc, const char *argv[]) {
     string ignore_filename = program.get<string>("-i");
     string decomposed_scores_filename = program.get<string>("-d");
     string decomposed_scores_p_filename = program.get<string>("-dp");
+    string token_buckets_filename = program.get<string>("-tb");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     int beta = program.get<int>("-beta");
@@ -226,14 +229,12 @@ int main(int argc, const char *argv[]) {
         exit(1);
     }
 
-    cout << "Finished loading" << endl;
-
     clock_t start_time2 = clock();
     int length = times.size();
     //vector<double> scores_decomposed = new vector<double>(length);
     std::vector<string> scores_decomposed(length);
     std::vector<string> scores_decomposed_p(length);
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");

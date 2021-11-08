@@ -61,6 +61,14 @@ parser.add_argument(
     help='Window size'
 )
 
+parser.add_argument(
+    '--unix_timestamp', 
+    required=True,
+    default=1,
+    type=int,
+    help='Timestamp type, if set to zero create mapping integer'
+)
+
 if __name__ == "__main__":
     parser.add_argument(
         'input_file',  
@@ -186,7 +194,6 @@ if __name__ == "__main__":
     df_symbolic = processed_df.loc[:, symbolic_index]
     df_label = processed_df.loc[:, ['is_anomaly']]
 
-
     for feature in symbolic_index:
         categorical_feat_dict = {}
         for i, entry in enumerate(df_symbolic.loc[:,feature].unique()):
@@ -202,8 +209,13 @@ if __name__ == "__main__":
     df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
 
     processed_df.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
-    processed_df.loc[:,'created_at'] = pd.to_datetime(processed_df['created_at']).dt.floor(str(args.window_size) + 'T')
-    processed_df.loc[:,'created_at'].map(create_unix).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
+    processed_df.loc[:,'created_at'] = pd.to_datetime(processed_df['created_at']).dt.floor(str(args.window_size) + 'T').map(create_unix)
+    if args.unix_timestamp == 0:
+        timestamp_dict = {}
+        for i, entry in enumerate(processed_df.loc[:,'created_at'].unique()):
+            timestamp_dict[entry] = i
+        processed_df.loc[:, 'created_at'] =  processed_df.loc[:,'created_at'].map(timestamp_dict)
+    processed_df.loc[:,'created_at'].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
     processed_df.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_score_record.txt", index=False, header=False)
 
     # save columns used

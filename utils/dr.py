@@ -9,7 +9,8 @@ def basic_umap_dr(data, n_neighbors=15, min_dist=0.1, n_components=1, metric='eu
         n_neighbors=n_neighbors,
         min_dist=min_dist,
         n_components=n_components,
-        metric=metric
+        metric=metric,
+        random_state=1000
     )
     u = fit.fit_transform(data)
     return u
