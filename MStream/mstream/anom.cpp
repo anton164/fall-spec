@@ -192,8 +192,6 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 stream_2 << ',';
             }
         }
-        stream << endl;
-        stream_2 << endl;
         std::string string_decomposed_scores = stream.str();
         std::string string_decomposed_p_scores = stream_2.str();
         (*anom_score)[i] = log(1 + sum);
