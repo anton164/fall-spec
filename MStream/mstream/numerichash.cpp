@@ -3,6 +3,7 @@
 
 #include "numerichash.hpp"
 #include <cmath>
+#include <iostream>
 
 using namespace std;
 

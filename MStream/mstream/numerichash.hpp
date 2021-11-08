@@ -16,12 +16,13 @@ public:
 
     void lower(double factor);
 
+    int hash(double cur_node);    
+
 private:
     int num_rows;
     int num_buckets;
     std::vector<std::vector<double> > count;
 
-    int hash(double cur_node);
 };
 
 #endif /* numerichash_hpp */
