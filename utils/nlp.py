@@ -6,8 +6,10 @@ import nltk
 from nltk.tokenize import word_tokenize
 
 # uncomment in new env
-#nltk.download('words')
-#nltk.download('punkt')
+# nltk.download('stopwords')
+# nltk.download('words')
+# nltk.download('punkt')
+# nltk.download('wordnet')
 
 words = set(nltk.corpus.words.words())
 stop_words = set(stopwords.words('english'))
