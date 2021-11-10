@@ -51,6 +51,7 @@ def render_mstream_results():
         )
         present_score_columns = [col for col in SCORE_COLUMNS if col in df_tweets_with_mstream_output.columns]
         columns = ["raw_tweet_text"] + present_score_columns
+        st.write(columns)
         df_mstream_input[columns] = df_tweets_with_mstream_output[
             ["text"]
             + present_score_columns
@@ -128,6 +129,15 @@ def render_mstream_results():
             y=df_tweets.mstream_anomaly_score,
             mode='lines',
             name="Anomaly score",
+            opacity=0.5
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df_tweets.created_at,
+            y=df_tweets.record_score,
+            mode='lines',
+            name="record_score",
             opacity=0.5
         )
     )
