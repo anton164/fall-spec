@@ -75,7 +75,6 @@ vector<double> find_max_numeric(int dimension1, vector<vector<double>> &numeric)
         for (int j = 0; j < numeric.at(i).size(); j++) {
             if (max_numeric.at(j) < numeric.at(i).at(j)) {
                 max_numeric.at(j) = numeric.at(i).at(j);
-                cout << max_numeric.at(j) << endl;
             }
         }   
     }
