@@ -27,8 +27,7 @@ double counts_to_anom(double tot, double cur, int cur_t, int smoothing_factor) {
     return sqerr / cur_mean + sqerr / (cur_mean * MAX(1, cur_t - 1));
 }
 
-bool are_same(double a, double b)
-{
+bool are_same(double a, double b) {
     return fabs(a - b) < EPSILON;
 }
 
@@ -70,9 +69,35 @@ void delete_file(string filename) {
     }
 }
 
+vector<double> find_max_numeric(int dimension1, vector<vector<double>> &numeric) {
+    vector<double> max_numeric(dimension1, -1*numeric_limits<int>::max());
+    for (int i = 0; i < numeric.size(); i++) {
+        for (int j = 0; j < numeric.at(i).size(); j++) {
+            if (max_numeric.at(j) < numeric.at(i).at(j)) {
+                max_numeric.at(j) = numeric.at(i).at(j);
+                cout << max_numeric.at(j) << endl;
+            }
+        }   
+    }
+    return max_numeric;
+}
+
+vector<double> find_min_numeric(int dimension1, vector<vector<double>> &numeric) {
+    vector<double> min_numeric(dimension1, numeric_limits<int>::max());
+    for (int i = 0; i < numeric.size(); i++) {
+        for (int j = 0; j < numeric.at(i).size(); j++) {
+            if (min_numeric.at(j) > numeric.at(i).at(j)) {
+                min_numeric.at(j) = numeric.at(i).at(j);
+            }
+        }   
+    }
+    return min_numeric;
+}
+
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
                         int num_buckets, double factor, int smoothing_factor, int dimension1, int dimension2, 
-                        vector<string> &scores_decomposed, vector<string> &scores_decomposed_p, string token_buckets_filename) {
+                        vector<string> &scores_decomposed, vector<string> &scores_decomposed_p, string token_buckets_filename,
+                        int abs_min_max) {
     int length = times.size(), cur_t = 1;
     delete_file(token_buckets_filename);
     Recordhash cur_count(num_rows, num_buckets, dimension1, dimension2);
@@ -84,6 +109,18 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<Categhash> categ_score(dimension2, Categhash(num_rows, num_buckets));
     vector<Categhash> categ_total(dimension2, Categhash(num_rows, num_buckets));
     vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+    
+    vector<double> abs_max_numeric = find_max_numeric(dimension1, numeric);
+    vector<double> abs_min_numeric = find_min_numeric(dimension1, numeric);
+
+    // Small snippet to printt the abs_max value and the abs_min
+    /*for (int k = 0; k < abs_max_numeric.size(); k++) {
+        cout << "this is the max value" << abs_max_numeric.at(k) << endl;
+    }
+
+    for (int k = 0; k < abs_min_numeric.size(); k++) {
+        cout << "this is the min value" << abs_min_numeric.at(k) << endl;
+    }*/
 
     vector<double> cur_numeric(0);
     vector<double> max_numeric(0);
@@ -118,22 +155,31 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
             if (cur_numeric[node_iter] != 0) {
                 double tmp_original_numeric = cur_numeric[node_iter];
                 cur_numeric[node_iter] = log10(1 + cur_numeric[node_iter]);
-                if (!i) {
-                    max_numeric[node_iter] = cur_numeric[node_iter];
-                    min_numeric[node_iter] = cur_numeric[node_iter];
-                    cur_numeric[node_iter] = 0;
+                if (abs_min_max != 1) {
+                    if (!i) {
+                        max_numeric[node_iter] = cur_numeric[node_iter];
+                        min_numeric[node_iter] = cur_numeric[node_iter];
+                        cur_numeric[node_iter] = 0;
+                    } else {
+                        min_numeric[node_iter] = MIN(min_numeric[node_iter], cur_numeric[node_iter]);
+                        max_numeric[node_iter] = MAX(max_numeric[node_iter], cur_numeric[node_iter]);
+                        if (max_numeric[node_iter] == min_numeric[node_iter]) cur_numeric[node_iter] = 0;
+                        else cur_numeric[node_iter] = (cur_numeric[node_iter] - min_numeric[node_iter]) /
+                                        (max_numeric[node_iter] - min_numeric[node_iter]);
+                    }
                 } else {
-                    min_numeric[node_iter] = MIN(min_numeric[node_iter], cur_numeric[node_iter]);
-                    max_numeric[node_iter] = MAX(max_numeric[node_iter], cur_numeric[node_iter]);
-                    if (max_numeric[node_iter] == min_numeric[node_iter]) cur_numeric[node_iter] = 0;
-                    else cur_numeric[node_iter] = (cur_numeric[node_iter] - min_numeric[node_iter]) /
-                                    (max_numeric[node_iter] - min_numeric[node_iter]);
+                    if (abs_max_numeric[node_iter] == abs_min_numeric[node_iter]) cur_numeric[node_iter] = 0;
+                    else cur_numeric[node_iter] = (cur_numeric[node_iter] - abs_min_numeric[node_iter]) /
+                                    (abs_max_numeric[node_iter] - abs_min_numeric[node_iter]);
                 }
+                
                 if (dimension1 == 1) {
                     int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
                     // Sample test to make sure tokens are mapped to the same buckets over time
-                    /*if (are_same(tmp_original_numeric,1.35)) {
+                    /*if (are_same(tmp_original_numeric, 7.37379)) {
+                        cout << cur_numeric[node_iter] << endl;
                         cout << bucket_index << endl;
+                        cout << "---" << endl;
                     }*/
                     words_to_bucket[bucket_index].push_back(tmp_original_numeric);
                 }

@@ -46,6 +46,13 @@ parser.add_argument(
     type=int,
     help='MStream number of buckets'
 )
+parser.add_argument(
+    '--abs_min_max', 
+    type=int,
+    required=False,
+    default=1,
+    help='Abs min max, should the max and min value should be searched in stream fashion or a priori. Default is 1'
+)
 args = parser.parse_args()
 
 print("Args", args)
@@ -87,6 +94,7 @@ cmd = " ".join([
     f"-a {args.mstream_alpha}",
     f"-b {args.mstream_buckets}",
     f"-beta {args.mstream_beta}",
+    f"-absminmax {args.abs_min_max}",
     f"-tb 'data/{output_name}_token_buckets.txt'"
 ])
 print("Running MSTREAM...")

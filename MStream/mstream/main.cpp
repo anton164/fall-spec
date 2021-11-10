@@ -161,6 +161,10 @@ int main(int argc, const char *argv[]) {
             .default_value(0.8)
             .action([](const std::string &value) { return std::stod(value); })
             .help("Alpha: Temporal Decay Factor. Default is 0.8");
+    program.add_argument("-absminmax", "--absminmax")
+            .default_value(0)
+            .action([](const std::string &value) { return std::stoi(value); })
+            .help("Abs min max, should the max and min value should be searched in stream fashion or a priori. Default is 1");
     program.add_argument("-beta", "--beta")
             .default_value(0)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -184,6 +188,7 @@ int main(int argc, const char *argv[]) {
     string decomposed_scores_filename = program.get<string>("-d");
     string decomposed_scores_p_filename = program.get<string>("-dp");
     string token_buckets_filename = program.get<string>("-tb");
+    int abs_min_max = program.get<int>("-absminmax");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     int beta = program.get<int>("-beta");
@@ -234,7 +239,7 @@ int main(int argc, const char *argv[]) {
     //vector<double> scores_decomposed = new vector<double>(length);
     std::vector<string> scores_decomposed(length);
     std::vector<string> scores_decomposed_p(length);
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename, abs_min_max);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");
