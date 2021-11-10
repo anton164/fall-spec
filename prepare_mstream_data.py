@@ -107,7 +107,9 @@ if __name__ == "__main__":
 
     def sample_synthetic_string_anomaly(created_at, random_strings):
         """ Sample from random_strings, unless created_at is within some range """
-        if (pd.to_datetime(created_at).day % 5 == 0):
+        if (pd.to_datetime(created_at).day % 10 == 0):
+            return "deterministic event"
+        elif (pd.to_datetime(created_at).day % 5 == 0):
             return "this is not random"
         else:
             if random.randint(0, 1) == 1:
