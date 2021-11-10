@@ -8,8 +8,8 @@ class AnomalyBucket:
     bucket_index: int
     # mapping for (feature value -> (timestep ->  count))
     hashed_feature_value_counts_over_timesteps: Dict[Any, Dict[int, int]] 
-    # mapping from id to value
-    hashed_feature_values: Dict[int, Any]
+    # mapping from feature value representation to underlying value
+    hashed_feature_values: Dict[float, Any]
 
     def __init__(self, bucket_index) -> None:
         self.bucket_index = bucket_index
@@ -28,7 +28,7 @@ class AnomalyBucket:
             feat_val_count = count_by_timestep[timestep]
             total_counter += feat_val_count
             if (feat_val_count > 0):
-                feat_val_counts.append((self.hashed_feature_values[feat_val], feat_val_count))
+                feat_val_counts.append((feat_val, self.hashed_feature_values[feat_val], feat_val_count))
         return {
             "total_count": total_counter,
             "feat_val_counts": feat_val_counts
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     )
     for bucket in sorted_buckets[:5]:
         print(f"Bucket {bucket.bucket_index} has {bucket.hashed_value_count()} unique values:")
-        print(", ".join(bucket.hashed_feature_values.values()))
+        print(", ".join([f"{word} ({numerical})" for numerical, word in bucket.hashed_feature_values.items()]))
 
     print(f"Bucket timeseries for bucket {sorted_buckets[0].bucket_index}:")
     print(sorted_buckets[0].timeseries(100))
