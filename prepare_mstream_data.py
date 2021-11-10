@@ -9,6 +9,7 @@ import datetime
 import string
 import random
 from collections import defaultdict
+import json
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
@@ -200,6 +201,18 @@ if __name__ == "__main__":
                     processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr, unk_counts=unk_counts)
                     continuous_index.append('text')
                     print(f"{len(unk_counts)}/{len(vocabulary)} unique unks with fasttext_limit: {args.fasttext_limit}")
+                    
+                    # Save vocabulary representation
+                    vocabulary_dump = {}
+                    for word, vocab_data in vocabulary.items():
+                        vocabulary_dump[word] = {
+                            "occurrences": vocab_data["occurrences"],
+                            "fasttext_idx": vocab_data["fasttext_idx"],
+                            "umap_representation": float(fasttext_dr[word]) if word in fasttext_dr else None
+                        }
+                        
+                    with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_vocabulary.json", "w") as f:
+                        json.dump(vocabulary_dump, f)
                     
     processed_df = processed_df.sort_values(by=['id', 'created_at'], ascending = (True, True))
     df_continuous = processed_df.loc[:, continuous_index]
