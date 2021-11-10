@@ -38,6 +38,7 @@ class AnomalyBucket:
     
 def read_buckets(file):
     buckets_by_index: Dict[int, AnomalyBucket] = defaultdict(lambda: AnomalyBucket())
+    value_to_bucket_index = {}
     with open(file, "r") as f:
         for timestep, line in enumerate(f.readlines()):
             bucket_contents = eval(line)
@@ -45,12 +46,15 @@ def read_buckets(file):
                 bucket = buckets_by_index[bucket_index]
                 val_counter = defaultdict(lambda: 0)
                 for val in content:
+                    if val in value_to_bucket_index and bucket_index != value_to_bucket_index[val]:
+                        raise Exception(f"Value {val} hashed to multiple buckets: {value_to_bucket_index[val]} and {bucket_index} at timestep {timestep}")
+                    value_to_bucket_index[val] = bucket_index
                     val_counter[val] += 1
                 for val, val_counter in val_counter.items():
                     # TODO: load actual feature value from a map
                     bucket.hashed_feature_values[val] = ""
                     bucket.hashed_feature_value_counts_over_timesteps[val][timestep] = val_counter
-    
+    print(f"Found {len(value_to_bucket_index)} unique values when reading bucket file {file}")
     return buckets_by_index
 
 if __name__ == "__main__":
@@ -58,9 +62,10 @@ if __name__ == "__main__":
 
     n_buckets = len(buckets_by_index)
     n_unique_values = sum([bucket.hashed_value_count() for bucket in buckets_by_index.values()])
+    summed_value_counts = sum([bucket.hashed_value_count() for bucket in buckets_by_index.values()])
     utilized_buckets = sum([1 if bucket.hashed_value_count() > 0 else 0 for bucket in buckets_by_index.values()])
     print(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
-    print(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
+    print(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets ({summed_value_counts} total feature value counts)")
 
     print("Bucket timeseries for bucket 0:")
     print(buckets_by_index[0].timeseries(100))
