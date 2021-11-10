@@ -94,6 +94,7 @@ if __name__ == "__main__":
     for bucket in sorted_buckets[:5]:
         print(f"Bucket {bucket.bucket_index} has {bucket.hashed_value_count()} unique values:")
         print(", ".join([f"{word} ({numerical})" for numerical, word in bucket.hashed_feature_values.items()]))
+        print()
 
     print(f"Bucket timeseries for bucket {sorted_buckets[0].bucket_index}:")
     print(sorted_buckets[0].timeseries(100))
