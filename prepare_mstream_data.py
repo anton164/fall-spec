@@ -8,7 +8,7 @@ import time
 import datetime
 import string
 import random
-
+from collections import defaultdict
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
@@ -68,6 +68,13 @@ parser.add_argument(
     type=int,
     help='Timestamp type, if set to zero create mapping integer'
 )
+parser.add_argument(
+    '--fasttext_limit', 
+    type=int,
+    required=False,
+    default=100,
+    help='Limit number of fasttext vectors'
+)
 
 if __name__ == "__main__":
     parser.add_argument(
@@ -107,8 +114,9 @@ if __name__ == "__main__":
             else:
                 return ""
     
-    def map_word_to_umap(word, fasttext_dr):
+    def map_word_to_umap(word, fasttext_dr, unk_counts):
         if word not in fasttext_dr:
+            unk_counts[word] += 1
             return UNK
         else:
             return fasttext_dr[word]
@@ -177,8 +185,10 @@ if __name__ == "__main__":
                     #raise Exception("UMAP not implemented")
                     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
                         df,
-                        False
+                        False,
+                        limit=args.fasttext_limit
                     )
+                    print("Vocabulary size", len(vocabulary))
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
                     reduced_fasttext = basic_umap_dr(fasttext_lookup_df)
                     # do this step only if the dr is to 1, convert reduced fastext to dict
@@ -186,8 +196,10 @@ if __name__ == "__main__":
                     values_list = [item for sublist in reduced_fasttext for item in sublist]
                     zip_iterator = zip(keys_list, values_list)
                     fasttext_dr = dict(zip_iterator)
-                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr)
+                    unk_counts = defaultdict(lambda: 0)
+                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr, unk_counts=unk_counts)
                     continuous_index.append('text')
+                    print(f"{len(unk_counts)}/{len(vocabulary)} unique unks with fasttext_limit: {args.fasttext_limit}")
                     
     processed_df = processed_df.sort_values(by=['id', 'created_at'], ascending = (True, True))
     df_continuous = processed_df.loc[:, continuous_index]

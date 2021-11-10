@@ -66,6 +66,7 @@ run_command(" ".join([
     f"--hashtag_encoding {args.hashtag_encoding}",
     f"--hashtag_filter {args.hashtag_filter}",
     f"--unix_timestamp {args.unix_timestamp}",
+    f"--fasttext_limit {args.fasttext_limit}",
 ]))
 
 # Run MStream
