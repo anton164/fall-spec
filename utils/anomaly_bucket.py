@@ -41,7 +41,16 @@ class AnomalyBucket:
         return pd.DataFrame(data)
 
 def umap_key(val):
-    return str(round(val, 2))
+    round_decimals = 5
+    if (abs(val)) > 10:
+        round_decimals -= 1
+    # if (val < 0):
+    #     round_decimals -= 1
+    rounded = round(val, round_decimals)
+    if (float(rounded).is_integer()):
+        return str(int(rounded))
+    else:
+        return str(rounded)
     
 def read_buckets(file, vocabulary):
     umap_to_word = {
