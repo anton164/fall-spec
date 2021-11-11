@@ -40,6 +40,24 @@ class AnomalyBucket:
             data.append(self.get_value_counts_at_timestep(timestep))
         return pd.DataFrame(data)
 
+class BucketCollection:
+    def __init__(self, buckets_by_index: Dict[int, AnomalyBucket]) -> None:
+        self.by_index = buckets_by_index
+        self.sorted = sorted(
+            buckets_by_index.values(), 
+            key=lambda x: x.hashed_value_count(),
+            reverse=True
+        )
+
+    def size(self):
+        return len(self.sorted)
+
+    def count_utilized_buckets(self):
+        return sum([1 if bucket.hashed_value_count() > 0 else 0 for bucket in self.by_index.values()])
+    
+    def count_unique_values(self):
+        return sum([bucket.hashed_value_count() for bucket in self.by_index.values()])
+
 def umap_key(val):
     round_decimals = 5
     if (abs(val)) > 10:
@@ -74,7 +92,6 @@ def read_buckets(file, vocabulary):
                     value_to_bucket_index[val] = bucket_index
                     val_counter[val] += 1
                 for val, val_counter in val_counter.items():
-                    # TODO: load actual feature value from a map
                     bucket.hashed_feature_values[val] = umap_to_word[umap_key(val)]
                     bucket.hashed_feature_value_counts_over_timesteps[val][timestep] = val_counter
     print(f"Found {len(value_to_bucket_index)} unique values when reading bucket file {file}")
@@ -86,24 +103,20 @@ if __name__ == "__main__":
     with open(vocabulary_file, "r") as f:
         vocabulary = json.load(f)
     buckets_by_index = read_buckets(buckets_file, vocabulary)
+    buckets = BucketCollection(buckets_by_index)
 
     n_buckets = len(buckets_by_index)
-    n_unique_values = sum([bucket.hashed_value_count() for bucket in buckets_by_index.values()])
-    summed_value_counts = sum([bucket.hashed_value_count() for bucket in buckets_by_index.values()])
-    utilized_buckets = sum([1 if bucket.hashed_value_count() > 0 else 0 for bucket in buckets_by_index.values()])
+    n_unique_values = buckets.count_unique_values()
+    utilized_buckets = buckets.count_utilized_buckets()
+
     print(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
-    print(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets ({summed_value_counts} total feature value counts)")
+    print(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
     
     print("Buckets sorted by hashed feature count")
-    sorted_buckets = sorted(
-        buckets_by_index.values(), 
-        key=lambda x: x.hashed_value_count(),
-        reverse=True
-    )
-    for bucket in sorted_buckets[:5]:
+    for bucket in buckets.sorted[:5]:
         print(f"Bucket {bucket.bucket_index} has {bucket.hashed_value_count()} unique values:")
         print(", ".join([f"{word} ({numerical})" for numerical, word in bucket.hashed_feature_values.items()]))
         print()
-
-    print(f"Bucket timeseries for bucket {sorted_buckets[0].bucket_index}:")
-    print(sorted_buckets[0].timeseries(100))
+    top_bucket = buckets.sorted[0]
+    print(f"Bucket timeseries for bucket {top_bucket.bucket_index}:")
+    print(top_bucket.timeseries(100))
