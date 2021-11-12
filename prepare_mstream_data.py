@@ -193,7 +193,11 @@ if __name__ == "__main__":
                     )
                     print("Vocabulary size", len(vocabulary))
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
-                    reduced_fasttext = basic_umap_dr(fasttext_lookup_df, min_dist=0.1, spread=1)
+                    reduced_fasttext = basic_umap_dr(
+                        fasttext_lookup_df, 
+                        min_dist=0.1, 
+                        spread=1
+                    )
                     # do this step only if the dr is to 1, convert reduced fastext to dict
                     keys_list = fasttext_lookup_df.index.tolist()
                     values_list = [item for sublist in reduced_fasttext for item in sublist]
