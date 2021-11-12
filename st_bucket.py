@@ -90,15 +90,24 @@ def render_buckets():
 
     fig = go.Figure()
     df_vocab_in_buckets = df_vocab[~pd.isna(df_vocab.bucket_index)].sort_values("umap_representation")
-    st.subheader("Bucket visualization")
-    for bucket_index in df_vocab_in_buckets.bucket_index.unique():
+    st.subheader("Token -> Bucket visualization")
+    for bucket in buckets.sorted:
+        bucket_index = bucket.bucket_index
         df = df_vocab_in_buckets[df_vocab_in_buckets.bucket_index == bucket_index]
-        fig.add_trace(
-            go.Scatter(
-                x=df.umap_representation,
-                y=df.occurrences
+        if (len(df) > 0):
+            fig.add_trace(
+                go.Scatter(
+                    y=df.umap_representation,
+                    x=[bucket_index] * len(df.umap_representation),
+                    text=df.index,
+                    mode="markers",
+                    name=f"bucket {bucket_index} ({len(df)} tokens)"
+                )
             )
-        )
+    fig.update_layout(
+        xaxis_title="Bucket index",
+        yaxis_title="UMAP Value",
+    )
     st.write(fig)
 
     selected_bucket = int(st.number_input(

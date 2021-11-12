@@ -62,8 +62,8 @@ def umap_key(val):
     round_decimals = 5
     if (abs(val)) > 10:
         round_decimals -= 1
-    # if (val < 0):
-    #     round_decimals -= 1
+    if (abs(val) < 1):
+        round_decimals -= 1
     rounded = round(val, round_decimals)
     if (float(rounded).is_integer()):
         return str(int(rounded))
