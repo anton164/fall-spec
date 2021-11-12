@@ -13,9 +13,25 @@ import json
 from gensim.models import KeyedVectors
 from utils.dataset import load_tweet_dataset
 from utils.nlp import construct_vocabulary_encoding, preprocess_text
+import pickle
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './data/embeddings/'
+
+def load_fasttext(limit):
+    cache_loc = f'./data/embeddings/fasttext/cache-{limit}'
+    try:
+        with open(cache_loc, 'rb') as f:
+            print("Loaded fasttext from cache!", cache_loc)
+            return pickle.load(f)
+    except Exception as e:
+        print("Failed to load fasttext from cache", cache_loc)
+        fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec', limit=limit)
+        with open(cache_loc, 'wb') as f:
+            print("Writing fasttext to cache", cache_loc)
+            pickle.dump(fasttext, f)
+        return fasttext
+
 
 def tokenize_dataframe_fasttext(df, process_text=True, limit=100):
     if process_text:
@@ -26,8 +42,7 @@ def tokenize_dataframe_fasttext(df, process_text=True, limit=100):
     else:
         df['text_tokenized'] = df['text']
     print("Loading embeddings...")
-    fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec', limit=limit)
-    #fasttext = KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec')
+    fasttext = load_fasttext(limit)
     print("Constructing vocabulary from dataframe...")
     return construct_vocabulary_encoding(
         df["text_tokenized"].tolist(),
