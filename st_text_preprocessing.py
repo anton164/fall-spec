@@ -14,9 +14,9 @@ def render_text_preprocessing():
         ".json"
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
-    df_tweets = load_tweet_dataset(selected_dataset)
+    df_tweets = load_tweet_dataset(selected_dataset)[:100]
     
-    st.write(df_tweets["text"])
+    st.table(df_tweets[["text", "hashtags", "mentions"]])
 
     st.subheader("Parameters")
 
@@ -31,7 +31,7 @@ def render_text_preprocessing():
         lambda t: preprocess_text(t),
     )
     st.subheader("After preprocessing")
-    st.write(df_tweets["text"])
+    st.table(df_tweets[["text", "hashtags", "mentions"]])
 
 if __name__ == "__main__":
     render_text_preprocessing()

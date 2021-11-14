@@ -11,8 +11,12 @@ from nltk.tokenize import word_tokenize
 # nltk.download('punkt')
 # nltk.download('wordnet')
 
+custom_stopwords = {
+    "rt"
+}
+
 words = set(nltk.corpus.words.words())
-stop_words = set(stopwords.words('english'))
+stop_words = set(stopwords.words('english')).union(custom_stopwords)
 
 def stemming(words):
     ps=PorterStemmer()
@@ -29,6 +33,16 @@ def lower_text(words):
     return [word.lower() for word in words]
 
 def cleaner(tweet):
+    # remove hashtags and mentions
+
+    remove_urls = lambda x: re.sub("http(.+)?(\W|$)", ' ', x)
+    normalize_spaces = lambda x: re.sub("[\n\r\t ]+", ' ', x)
+    
+    remove_mentions = lambda x: re.sub("@(\w+)", "", x)
+    remove_hashtags = lambda x: re.sub("#(\w+)", "", x)
+
+    tweet = remove_mentions(remove_hashtags(normalize_spaces(remove_urls(tweet))))
+
     tweet = ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)"," ",tweet).split())
     tweet = " ".join(tweet.split())
     tweet = ''.join(c for c in tweet if c not in emoji.UNICODE_EMOJI) #Remove Emojis
@@ -43,7 +57,7 @@ def preprocess_text(
     lower=True,
     clean=True,
     lemmatize=True,
-    stem=True,
+    stem=False,
     stop_words=True
 ):
     """ Helper method for parametrizing text preprocessing """
