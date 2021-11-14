@@ -42,7 +42,7 @@ def tokenize_dataframe_fasttext(df, process_text=True, fasttext_limit=100000000)
     else:
         df['text_tokenized'] = df['text']
     print("Loading embeddings...")
-    fasttext = load_fasttext(limit)
+    fasttext = load_fasttext(fasttext_limit)
     print("Constructing vocabulary from dataframe...")
     return construct_vocabulary_encoding(
         df["text_tokenized"].tolist(),
