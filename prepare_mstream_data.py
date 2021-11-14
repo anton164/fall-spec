@@ -198,7 +198,7 @@ if __name__ == "__main__":
                 # Text feature encoding
                 df['text'] = df['text'].apply(lambda x: preprocess_text(
                     x,
-                    lemmatize=args.lemmatize
+                    lemmatize=args.text_lemmatize
                 ))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
                 for other_col in extra_columns:
