@@ -15,23 +15,29 @@ def render_text_preprocessing():
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
     df_tweets = load_tweet_dataset(selected_dataset)[:100]
-    
-    st.table(df_tweets[["text", "hashtags", "mentions"]])
 
     st.subheader("Parameters")
 
-    exclude_retweets = st.checkbox("Exclude retweet text")
+    col1, col2, col3 = st.columns(3)
+    exclude_retweets = col1.checkbox("Exclude retweet text?", value=True)
+    stem = col2.checkbox("Stem?", value=False)
+    lemmatize = col3.checkbox("Lemmatize?", value=False)
+
     if (exclude_retweets):
-        df_tweets["text"] = df_tweets.apply(
+        df_tweets["processed_text"] = df_tweets.apply(
             exclude_retweet_text(),
             axis=1
         )
+
+    df_tweets["processed_text"] = df_tweets["processed_text"].apply(
+        lambda t: preprocess_text(
+            t,
+            lemmatize=lemmatize,
+            stem=stem
+        ),
+    ).apply(lambda t: ", ".join(t))
     
-    df_tweets["text"] = df_tweets["text"].apply(
-        lambda t: preprocess_text(t),
-    )
-    st.subheader("After preprocessing")
-    st.table(df_tweets[["text", "hashtags", "mentions"]])
+    st.table(df_tweets[["text", "processed_text"]])
 
 if __name__ == "__main__":
     render_text_preprocessing()

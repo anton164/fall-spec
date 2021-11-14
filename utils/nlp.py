@@ -56,7 +56,7 @@ def preprocess_text(
     tokenize=True,
     lower=True,
     clean=True,
-    lemmatize=True,
+    lemmatize=False,
     stem=False,
     stop_words=True
 ):

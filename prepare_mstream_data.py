@@ -49,6 +49,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--text_lemmatize', 
+    required=False,
+    type=int,
+    default=0,
+    help='Whether text should be lemmatized'
+)
+
+parser.add_argument(
     '--hashtag_encoding', 
     required=False,
     default="None",
@@ -188,7 +196,10 @@ if __name__ == "__main__":
                     symbolic_index.append('hashtags')
             if col == "text":
                 # Text feature encoding
-                df['text'] = df['text'].apply(lambda x: preprocess_text(x))
+                df['text'] = df['text'].apply(lambda x: preprocess_text(
+                    x,
+                    lemmatize=args.lemmatize
+                ))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
                 for other_col in extra_columns:
                     if other_col != col:

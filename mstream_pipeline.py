@@ -88,6 +88,7 @@ with Timer("prepare mstream data"):
         f"--text_encoding {args.text_encoding}",
         f"--text_synthetic {args.text_synthetic}",
         f"--text_exclude_retweets {args.text_exclude_retweets}",
+        f"--text_lemmatize {args.text_lemmatize}",
         f"--hashtag_encoding {args.hashtag_encoding}",
         f"--hashtag_filter {args.hashtag_filter}",
         f"--unix_timestamp {args.unix_timestamp}",
