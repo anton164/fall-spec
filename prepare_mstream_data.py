@@ -81,7 +81,7 @@ parser.add_argument(
     '--fasttext_limit', 
     type=int,
     required=False,
-    default=100,
+    default=100000000,
     help='Limit number of fasttext vectors'
 )
 
@@ -203,7 +203,7 @@ if __name__ == "__main__":
                     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
                         df,
                         False,
-                        limit=args.fasttext_limit
+                        fasttext_limit=args.fasttext_limit
                     )
                     print("Vocabulary size", len(vocabulary))
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
