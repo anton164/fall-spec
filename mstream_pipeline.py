@@ -87,6 +87,7 @@ with Timer("prepare mstream data"):
         f"--merlion_anomaly_threshold {args.merlion_anomaly_threshold}",
         f"--text_encoding {args.text_encoding}",
         f"--text_synthetic {args.text_synthetic}",
+        f"--text_retweet_once {args.text_retweet_once}",
         f"--hashtag_encoding {args.hashtag_encoding}",
         f"--hashtag_filter {args.hashtag_filter}",
         f"--unix_timestamp {args.unix_timestamp}",
