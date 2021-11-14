@@ -1,7 +1,7 @@
 import pandas as pd
 import argparse
 from create_embeddings import tokenize_dataframe_fasttext
-from utils.nlp import preprocess_text
+from utils.nlp import exclude_retweet_text, preprocess_text
 from utils.dr import basic_umap_dr
 from utils.dataset import load_tweet_dataset
 import time
@@ -41,7 +41,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    '--text_retweet_once', 
+    '--text_exclude_retweets', 
     required=False,
     type=int,
     default=0,
@@ -142,25 +142,9 @@ if __name__ == "__main__":
     symbolic_index = []
     continuous_index = []
 
-    if (args.text_retweet_once):
-        seen_tweets = set()
-        def filter_retweet_text(tweet):
-            """ Ensure that an original tweet's text is only returned once
-                (i.e. when we process the first original tweet/retweet)
-            """
-            retweeted_id = "retweeted" in tweet and tweet["retweeted"]
-            if (retweeted_id and retweeted_id in seen_tweets):
-                return ""
-            else:
-                if (retweeted_id):
-                    seen_tweets.add(retweeted_id)
-                else:
-                    seen_tweets.add(tweet.name)
-                return tweet.text
-
-            
+    if (args.text_exclude_retweets):        
         df["text"] = df.apply(
-            filter_retweet_text,
+            exclude_retweet_text(),
             axis=1
         )
 

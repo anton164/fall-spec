@@ -91,4 +91,18 @@ def construct_vocabulary_encoding(
     return vocabulary, tokenized_string_idxs, fasttext_subset
 
 
-
+def exclude_retweet_text(seen_tweets=set()):
+    def inner_fn(tweet):
+        """ Exclude retweet text, but ensure that an original tweet's text 
+            is returned once (i.e. when we process the first original tweet/retweet)
+        """
+        retweeted_id = "retweeted" in tweet and tweet["retweeted"]
+        if (retweeted_id and retweeted_id in seen_tweets):
+            return ""
+        else:
+            if (retweeted_id):
+                seen_tweets.add(retweeted_id)
+            else:
+                seen_tweets.add(tweet.name)
+            return tweet.text
+    return inner_fn
