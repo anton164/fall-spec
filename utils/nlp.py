@@ -48,9 +48,6 @@ def cleaner(tweet):
     tweet = ''.join(c for c in tweet if c not in emoji.UNICODE_EMOJI) #Remove Emojis
     return tweet
 
-def final_text(words):
-     return ' '.join(words)
-
 def preprocess_text(
     text: str,
     tokenize=True,
@@ -58,23 +55,26 @@ def preprocess_text(
     clean=True,
     lemmatize=False,
     stem=False,
-    stop_words=True
+    stop_words=True,
+    ensure_unique_tokens=True
 ):
     """ Helper method for parametrizing text preprocessing """
     if clean:
         text = cleaner(text)
-    text = word_tokenize(text)
+    tokens = word_tokenize(text)
     if lower:
-        text = lower_text(text)
+        tokens = lower_text(tokens)
     if lemmatize:
-        text = lemmatizing(text)
+        tokens = lemmatizing(tokens)
     if stem:
-        text = stemming(text)
+        tokens = stemming(tokens)
     if stop_words:
-        text = remove_stop_words(text)
+        tokens = remove_stop_words(tokens)
+    if ensure_unique_tokens:
+        tokens = list(set(tokens))
     if tokenize:
-        return text
-    return final_text(text)
+        return tokens
+    return ' '.join(tokens)
     
 
 def construct_vocabulary_encoding(
