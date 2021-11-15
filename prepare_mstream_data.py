@@ -72,6 +72,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--retweet_encoding', 
+    required=False,
+    default="None",
+    help='Type of retweet encoding [None, Categorical]'
+)
+
+parser.add_argument(
     '--window_size', 
     required=False,
     default=30,
@@ -188,12 +195,27 @@ if __name__ == "__main__":
     if args.hashtag_encoding != "None":
         extra_columns.append("hashtags")
     
+    if args.retweet_encoding != "None":
+        extra_columns.append("retweeted")
+    
     if len(extra_columns) == 0:
         processed_df = df.reset_index()[base_columns]
     else:
         processed_df = pd.DataFrame(columns = base_columns)
         for col in extra_columns:
             # Hashtag feature encoding
+            if col == "retweeted":
+                if (args.retweet_encoding == "Categorical"):
+                    df['retweeted'] = df['retweeted'].apply(
+                        lambda xs: xs if xs is not None else UNK
+                    )
+                    print("Encoding retweets as a categorical feature...")
+                    tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                    for other_col in extra_columns:
+                        if other_col != col:
+                            tmp_df[other_col] = 0
+                    processed_df = pd.concat([processed_df, tmp_df])
+                    symbolic_index.append('retweeted')
             if col == "hashtags":
                 if (args.hashtag_encoding == "Categorical"):
                     print("Encoding hashtags as a categorical feature...")
@@ -271,9 +293,12 @@ if __name__ == "__main__":
     df[[
         "text",
         "hashtags",
+        "retweeted",
         "created_at"
     ]].rename(columns={
         "text": "tokens"
+    }).astype({
+        "retweeted": "str"
     }).to_pickle(f"{OUTPUT_DATA_LOCATION}{args.output_name}_data.pickle")
     df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
     df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)
