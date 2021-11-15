@@ -3,6 +3,7 @@ import pandas as pd
 from .dtypes import tweet_dtypes
 from collections import Counter
 import numpy as np
+import json
 
 def get_with_default(obj, keys, default):
     for key in keys:
@@ -64,6 +65,17 @@ def load_tweet_dataset(location):
     )
 
     return df_tweets
+
+def load_vocabulary_df(location):
+    with open(location, "r") as f:
+        vocabulary = json.load(f)
+    df_vocab = pd.DataFrame.from_dict(
+        vocabulary,
+        orient="index"
+    ).sort_values("occurrences", ascending=False)
+    df_vocab["fasttext_idx"] = df_vocab["fasttext_idx"].astype("Int64")
+
+    return df_vocab
 
 def count_array_column(df_column):
     import streamlit as st

@@ -1,3 +1,4 @@
+import math
 from typing import Any, Dict
 from collections import defaultdict
 import sys
@@ -57,12 +58,10 @@ class BucketCollection:
     
     def count_unique_values(self):
         return sum([bucket.hashed_value_count() for bucket in self.by_index.values()])
-
+ 
 def umap_key(val):
     round_decimals = 5
     if (abs(val)) > 10:
-        round_decimals -= 1
-    if (abs(val) < 1):
         round_decimals -= 1
     rounded = round(val, round_decimals)
     if (float(rounded).is_integer()):

@@ -1,7 +1,7 @@
 import pandas as pd
 import argparse
 from create_embeddings import tokenize_dataframe_fasttext
-from utils.nlp import preprocess_text
+from utils.nlp import exclude_retweet_text, preprocess_text
 from utils.dr import basic_umap_dr
 from utils.dataset import load_tweet_dataset
 import time
@@ -10,6 +10,7 @@ import string
 import random
 from collections import defaultdict
 import json
+import math
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
@@ -41,6 +42,22 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--text_exclude_retweets', 
+    required=False,
+    type=int,
+    default=0,
+    help='If set to 1, a tweet text will only be included once (i.e. when we process the first original tweet/retweet)'
+)
+
+parser.add_argument(
+    '--text_lemmatize', 
+    required=False,
+    type=int,
+    default=0,
+    help='Whether text should be lemmatized'
+)
+
+parser.add_argument(
     '--hashtag_encoding', 
     required=False,
     default="None",
@@ -52,6 +69,20 @@ parser.add_argument(
     required=False,
     default="",
     help='Comma-separated hashtag filter'
+)
+
+parser.add_argument(
+    '--retweet_encoding', 
+    required=False,
+    default="None",
+    help='Type of retweet encoding [None, Categorical]'
+)
+
+parser.add_argument(
+    '--mention_encoding', 
+    required=False,
+    default="None",
+    help='Type of mention encoding [None, Categorical]'
 )
 
 parser.add_argument(
@@ -73,9 +104,23 @@ parser.add_argument(
     '--fasttext_limit', 
     type=int,
     required=False,
-    default=100,
+    default=100000000,
     help='Limit number of fasttext vectors'
 )
+
+# https://stackoverflow.com/questions/33019698/how-to-properly-round-up-half-float-numbers
+# specify custom rounding method to be consistent with C
+def c_round(n, decimals=0):
+    expoN = n * 10 ** decimals
+    if abs(expoN) - abs(math.floor(expoN)) < 0.5:
+        return math.floor(expoN) / 10 ** decimals
+    return math.ceil(expoN) / 10 ** decimals
+
+def map_word_to_umap(word, fasttext_dr):
+    if word not in fasttext_dr:
+        return UNK
+    else:
+        return c_round(fasttext_dr[word], 5)
 
 if __name__ == "__main__":
     parser.add_argument(
@@ -116,13 +161,6 @@ if __name__ == "__main__":
                 return " ".join([random.choice(random_strings) for i in range(random.randint(0, 4))])
             else:
                 return ""
-    
-    def map_word_to_umap(word, fasttext_dr, unk_counts):
-        if word not in fasttext_dr:
-            unk_counts[word] += 1
-            return UNK
-        else:
-            return fasttext_dr[word]
 
     # Load labels from merlion
     anomaly_threshold = args.merlion_anomaly_threshold
@@ -133,6 +171,12 @@ if __name__ == "__main__":
 
     symbolic_index = []
     continuous_index = []
+
+    if (args.text_exclude_retweets):        
+        df["text"] = df.apply(
+            exclude_retweet_text(),
+            axis=1
+        )
 
     # Text parsing
     if (args.text_synthetic > 0):
@@ -155,13 +199,28 @@ if __name__ == "__main__":
         extra_columns.append("text")
     if args.hashtag_encoding != "None":
         extra_columns.append("hashtags")
+    if args.retweet_encoding != "None":
+        extra_columns.append("retweeted")
+    if args.mention_encoding != "None":
+        extra_columns.append("mentions")
     
     if len(extra_columns) == 0:
         processed_df = df.reset_index()[base_columns]
     else:
         processed_df = pd.DataFrame(columns = base_columns)
         for col in extra_columns:
-            # Hashtag feature encoding
+            if col == "retweeted":
+                if (args.retweet_encoding == "Categorical"):
+                    df['retweeted'] = df['retweeted'].apply(
+                        lambda xs: xs if xs is not None else UNK
+                    )
+                    print("Encoding retweets as a categorical feature...")
+                    tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                    for other_col in extra_columns:
+                        if other_col != col:
+                            tmp_df[other_col] = 0
+                    processed_df = pd.concat([processed_df, tmp_df])
+                    symbolic_index.append('retweeted')
             if col == "hashtags":
                 if (args.hashtag_encoding == "Categorical"):
                     print("Encoding hashtags as a categorical feature...")
@@ -172,9 +231,22 @@ if __name__ == "__main__":
                             tmp_df[other_col] = 0
                     processed_df = pd.concat([processed_df, tmp_df])
                     symbolic_index.append('hashtags')
+            if col == "mentions":
+                if (args.retweet_encoding == "Categorical"):
+                    df['mentions'] = df['mentions'].apply(lambda xs: [x.lower() for x in xs])
+                    print("Encoding mentions as a categorical feature...")
+                    tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                    for other_col in extra_columns:
+                        if other_col != col:
+                            tmp_df[other_col] = 0
+                    processed_df = pd.concat([processed_df, tmp_df])
+                    symbolic_index.append('mentions')
             if col == "text":
                 # Text feature encoding
-                df['text'] = df['text'].apply(lambda x: preprocess_text(x))
+                df['text'] = df['text'].apply(lambda x: preprocess_text(
+                    x,
+                    lemmatize=args.text_lemmatize
+                ))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
                 for other_col in extra_columns:
                     if other_col != col:
@@ -189,7 +261,7 @@ if __name__ == "__main__":
                     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
                         df,
                         False,
-                        limit=args.fasttext_limit
+                        fasttext_limit=args.fasttext_limit
                     )
                     print("Vocabulary size", len(vocabulary))
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
@@ -204,7 +276,10 @@ if __name__ == "__main__":
                     zip_iterator = zip(keys_list, values_list)
                     fasttext_dr = dict(zip_iterator)
                     unk_counts = defaultdict(lambda: 0)
-                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr, unk_counts=unk_counts)
+                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr)
+                    for word in vocabulary.keys():
+                        if word not in fasttext_dr:
+                            unk_counts[word] += 1
                     continuous_index.append('text')
                     print(f"{len(unk_counts)}/{len(vocabulary)} unique unks with fasttext_limit: {args.fasttext_limit}")
                     
@@ -214,7 +289,7 @@ if __name__ == "__main__":
                         vocabulary_dump[word] = {
                             "occurrences": vocab_data["occurrences"],
                             "fasttext_idx": vocab_data["fasttext_idx"],
-                            "umap_representation": float(fasttext_dr[word]) if word in fasttext_dr else None
+                            "umap_representation": map_word_to_umap(word, fasttext_dr=fasttext_dr)
                         }
                         
                     with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_vocabulary.json", "w") as f:
@@ -233,9 +308,13 @@ if __name__ == "__main__":
     df[[
         "text",
         "hashtags",
+        "mentions",
+        "retweeted",
         "created_at"
     ]].rename(columns={
         "text": "tokens"
+    }).astype({
+        "retweeted": "str"
     }).to_pickle(f"{OUTPUT_DATA_LOCATION}{args.output_name}_data.pickle")
     df_continuous.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_numeric.txt", index=False, header=False)
     df_symbolic.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categ.txt", index=False, header=False)

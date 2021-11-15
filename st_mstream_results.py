@@ -34,7 +34,9 @@ def render_mstream_results():
         "mstream_anomaly_score",
         "record_score",
         "hashtags_score",
-        "text_score"
+        "mentions_score",
+        "text_score",
+        "retweeted_score"
     ]
 
     try:
@@ -142,8 +144,8 @@ def render_mstream_results():
         )
     )
     for i, val in enumerate(df_tweets.columns):
-        if val in read_columns(columns_names_file) and val != 'record_score':
-            hovertext = df_tweets[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
+        if val in read_columns(columns_names_file) and val not in ['record_score']:
+            #hovertext = df_tweets[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
             fig.add_trace(
                 go.Scatter(
                     x=df_tweets.created_at,
@@ -151,11 +153,11 @@ def render_mstream_results():
                     mode='lines',
                     name=" ".join(val.split('_')),
                     opacity=0.5,
-                    hovertext=hovertext
+             #       hovertext=hovertext
                 )
             )
     selected_points = plotly_events(fig)
-    #st.write(fig)
+    st.write(fig)
 
     st.subheader("Top Anomalies")
     present_score_columns = [col for col in SCORE_COLUMNS if col in df_mstream_input.columns]
