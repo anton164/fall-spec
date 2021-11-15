@@ -144,7 +144,9 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                     words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
                 }*/
                 int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
-                cout << bucket_index << "bucket index" << endl;
+                if (are_same(tmp_original_numeric, 1.82161)) {
+                    cout << bucket_index << endl;
+                }
                 words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
                 numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
                 numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
