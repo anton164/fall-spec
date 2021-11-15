@@ -77,7 +77,7 @@ def render_text_preprocessing():
     df_tweets["tokenized_text_str"] = df_tweets["tokenized_text"].apply(lambda t: ", ".join(t))
     
     with st.expander("Show first 100 preprocessed tweets"):
-        st.table(df_tweets[:100][["text", "tokenized_text"]])
+        st.table(df_tweets[:100][["text", "tokenized_text_str"]])
 
     st.header("How does it translate to UMAP?")
 
