@@ -6,9 +6,16 @@ from utils.dr import basic_umap_dr
 from utils.nlp import exclude_retweet_text, preprocess_text
 import pandas as pd
 from utils.st_utils import st_select_file
+import plotly.graph_objects as go
 
 @st.cache(allow_output_mutation=True)
-def convert_tokens_to_numerical_feature(df_tweets, text_col, output_col):
+def convert_tokens_to_numerical_feature(
+    df_tweets, 
+    text_col, 
+    output_col, 
+    umap_spread,
+    umap_min_dist
+):
     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
         df_tweets,
         False,
@@ -17,8 +24,8 @@ def convert_tokens_to_numerical_feature(df_tweets, text_col, output_col):
     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
     reduced_fasttext = basic_umap_dr(
         fasttext_lookup_df, 
-        min_dist=0.1, 
-        spread=1
+        min_dist=umap_min_dist, 
+        spread=umap_spread
     )
     keys_list = fasttext_lookup_df.index.tolist()
     values_list = [item for sublist in reduced_fasttext for item in sublist]
@@ -73,10 +80,17 @@ def render_text_preprocessing():
 
     st.header("How does it translate to UMAP?")
 
+    col1, col2, col3 = st.columns(3)
+    st.subheader("UMAP Parameters")
+    umap_spread = col1.number_input("Spread", value=1)
+    umap_min_dist = col2.number_input("Min dist", value=1)
+
     vocabulary = convert_tokens_to_numerical_feature(
         df_tweets, 
         "tokenized_text",
-        "umap_representation"
+        "umap_representation",
+        umap_spread,
+        umap_min_dist
     )
     unk_count = sum([1 for vocab_data in vocabulary.values() if pd.isna(vocab_data["fasttext_idx"])])
     st.write(f"**Vocabulary size:** {len(vocabulary)} ({unk_count} unks)")
@@ -85,8 +99,34 @@ def render_text_preprocessing():
         orient="index"
     ).sort_values("occurrences", ascending=False)
     df_vocab["fasttext_idx"] = df_vocab["fasttext_idx"].astype("Int64")
-
+    umap_spread = df_vocab["umap_representation"].max() - df_vocab["umap_representation"].min()
+    st.write(f"**UMAP spread:** {umap_spread}")
     st.write(df_vocab)
+
+    st.header("Approximate LSH")
+    lsh_spread = st.number_input("LSH Bucket Spread", value=0.6)
+    n_buckets = int(umap_spread / lsh_spread)
+    bucket_indices = list(range(n_buckets))
+    st.write(f"**N buckets:** {n_buckets}")
+    df_vocab["bucket_index"] = pd.cut(df_vocab['umap_representation'], bins=n_buckets, labels=bucket_indices)
+    st.write(df_vocab)
+
+    fig = go.Figure()
+    df_vocab_in_buckets = df_vocab[~pd.isna(df_vocab.bucket_index)].sort_values("umap_representation")
+    st.subheader("Token -> Bucket visualization")
+    for bucket_index in bucket_indices:
+        df = df_vocab_in_buckets[df_vocab_in_buckets.bucket_index == bucket_index]
+        if (len(df) > 0):
+            fig.add_trace(
+                go.Scatter(
+                    y=df.umap_representation,
+                    x=[bucket_index] * len(df.umap_representation),
+                    text=df.index,
+                    mode="markers",
+                    name=f"bucket {bucket_index} ({len(df)} tokens)"
+                )
+            )
+    st.write(fig)
 
 if __name__ == "__main__":
     render_text_preprocessing()
