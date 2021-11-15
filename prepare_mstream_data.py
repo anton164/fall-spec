@@ -10,6 +10,7 @@ import string
 import random
 from collections import defaultdict
 import json
+import math
 
 INPUT_DATA_LOCATION = './data/labeled_datasets/'
 OUTPUT_DATA_LOCATION = './MStream/data/'
@@ -93,6 +94,14 @@ parser.add_argument(
     help='Limit number of fasttext vectors'
 )
 
+# https://stackoverflow.com/questions/33019698/how-to-properly-round-up-half-float-numbers
+# specify custom rounding method to be consistent with C
+def c_round(n, decimals=0):
+    expoN = n * 10 ** decimals
+    if abs(expoN) - abs(math.floor(expoN)) < 0.5:
+        return math.floor(expoN) / 10 ** decimals
+    return math.ceil(expoN) / 10 ** decimals
+
 if __name__ == "__main__":
     parser.add_argument(
         'input_file',  
@@ -133,12 +142,13 @@ if __name__ == "__main__":
             else:
                 return ""
     
-    def map_word_to_umap(word, fasttext_dr, unk_counts):
+
+
+    def map_word_to_umap(word, fasttext_dr):
         if word not in fasttext_dr:
-            unk_counts[word] += 1
             return UNK
         else:
-            return fasttext_dr[word]
+            return c_round(fasttext_dr[word], 5)
 
     # Load labels from merlion
     anomaly_threshold = args.merlion_anomaly_threshold
@@ -229,7 +239,10 @@ if __name__ == "__main__":
                     zip_iterator = zip(keys_list, values_list)
                     fasttext_dr = dict(zip_iterator)
                     unk_counts = defaultdict(lambda: 0)
-                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr, unk_counts=unk_counts)
+                    processed_df['text'] = processed_df['text'].apply(map_word_to_umap, fasttext_dr=fasttext_dr)
+                    for word in vocabulary.keys():
+                        if word not in fasttext_dr:
+                            unk_counts[word] += 1
                     continuous_index.append('text')
                     print(f"{len(unk_counts)}/{len(vocabulary)} unique unks with fasttext_limit: {args.fasttext_limit}")
                     
@@ -239,7 +252,7 @@ if __name__ == "__main__":
                         vocabulary_dump[word] = {
                             "occurrences": vocab_data["occurrences"],
                             "fasttext_idx": vocab_data["fasttext_idx"],
-                            "umap_representation": float(fasttext_dr[word]) if word in fasttext_dr else None
+                            "umap_representation": map_word_to_umap(word, fasttext_dr=fasttext_dr)
                         }
                         
                     with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_vocabulary.json", "w") as f:
