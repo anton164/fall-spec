@@ -7,6 +7,7 @@ from utils.nlp import exclude_retweet_text, preprocess_text
 import pandas as pd
 from utils.st_utils import st_select_file
 import plotly.graph_objects as go
+import plotly.express as px
 
 @st.cache(allow_output_mutation=True)
 def convert_tokens_to_numerical_feature(
@@ -83,7 +84,7 @@ def render_text_preprocessing():
     col1, col2, col3 = st.columns(3)
     st.subheader("UMAP Parameters")
     umap_spread = col1.number_input("Spread", value=1)
-    umap_min_dist = col2.number_input("Min dist", value=1)
+    umap_min_dist = col2.number_input("Min dist", value=0.1)
 
     vocabulary = convert_tokens_to_numerical_feature(
         df_tweets, 
@@ -100,8 +101,14 @@ def render_text_preprocessing():
     ).sort_values("occurrences", ascending=False)
     df_vocab["fasttext_idx"] = df_vocab["fasttext_idx"].astype("Int64")
     umap_spread = df_vocab["umap_representation"].max() - df_vocab["umap_representation"].min()
-    st.write(f"**UMAP spread:** {umap_spread}")
     st.write(df_vocab)
+
+    st.write("**UMAP representation vs. occurrences**")
+    st.write(f"**UMAP value spread:** {umap_spread}")
+    st.write(px.scatter(
+        x=df_vocab["umap_representation"],
+        y=df_vocab["occurrences"]
+    ))
 
     st.header("Approximate LSH")
     lsh_spread = st.number_input("LSH Bucket Spread", value=0.6)
