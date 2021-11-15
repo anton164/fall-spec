@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include "categhash.hpp"
 #include <limits>
+#include <iostream>
 
 using namespace std;
 
@@ -53,4 +54,17 @@ void Categhash::lower(double factor) {
             count[i][j] = count[i][j] * factor;
         }
     }
+}
+
+int Categhash::get_bucket(long cur_int) {
+    double min_count = numeric_limits<double>::max();
+    int bucket;
+    int bucket_to_return;
+    for (int i = 0; i < num_rows; i++) {
+        bucket = hash(cur_int, i);
+        if (count[i][bucket] < min_count) {
+            bucket_to_return = bucket;
+        }
+    }
+    return bucket_to_return;
 }

@@ -93,12 +93,41 @@ vector<double> find_min_numeric(int dimension1, vector<vector<double>> &numeric)
     return min_numeric;
 }
 
+void SplitString(string s, vector<string> &v, char sep){
+	string temp = "";
+	for(int i=0;i<s.length();++i){
+		if(s[i]==sep){
+			v.push_back(temp);
+			temp = "";
+		}
+		else{
+			temp.push_back(s[i]);
+		}		
+	}
+	v.push_back(temp);
+}
+
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
                         int num_buckets, double factor, int smoothing_factor, int dimension1, int dimension2, 
                         vector<string> &scores_decomposed, vector<string> &scores_decomposed_p, string token_buckets_filename,
-                        int abs_min_max) {
+                        int abs_min_max, string columns_filename, int min_count) {
     int length = times.size(), cur_t = 1;
+    // get column names
+    ifstream infile(columns_filename);
+    string sLine;
+    if (infile.good()) {
+        getline(infile, sLine);
+    }
+    vector<string> columns;
+    char sep = ',';
+	SplitString(sLine, columns, sep);
     delete_file(token_buckets_filename);
+    for (int k = 1; k < columns.size(); k++) {
+        vector<string> tmp_file_name;
+        char sep = '.';
+        SplitString(token_buckets_filename, tmp_file_name, sep);
+        delete_file(tmp_file_name.at(0)+"_"+columns.at(k)+".txt");
+    }
     Recordhash cur_count(num_rows, num_buckets, dimension1, dimension2);
     Recordhash total_count(num_rows, num_buckets, dimension1, dimension2);
     
@@ -107,19 +136,10 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<Numerichash> numeric_total(dimension1, Numerichash(num_rows, num_buckets));
     vector<Categhash> categ_score(dimension2, Categhash(num_rows, num_buckets));
     vector<Categhash> categ_total(dimension2, Categhash(num_rows, num_buckets));
-    vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+    vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
     
     vector<double> abs_max_numeric = find_max_numeric(dimension1, numeric);
     vector<double> abs_min_numeric = find_min_numeric(dimension1, numeric);
-
-    // Small snippet to printt the abs_max value and the abs_min
-    /*for (int k = 0; k < abs_max_numeric.size(); k++) {
-        cout << "this is the max value" << abs_max_numeric.at(k) << endl;
-    }
-
-    for (int k = 0; k < abs_min_numeric.size(); k++) {
-        cout << "this is the min value" << abs_min_numeric.at(k) << endl;
-    }*/
 
     vector<double> cur_numeric(0);
     vector<double> max_numeric(0);
@@ -139,8 +159,15 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
             for (int j = 0; j < dimension2; j++) {
                 categ_score[j].lower(factor);
             }
-            save_token_buckets(token_buckets_filename, words_to_bucket);
-            vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+
+            for (int i = 0; i < words_to_bucket.size(); i++) {
+                vector<string> tmp_file_name;
+                char sep = '.';
+                SplitString(token_buckets_filename, tmp_file_name, sep);
+                save_token_buckets(tmp_file_name.at(0)+"_"+columns.at(i+1)+".txt", words_to_bucket.at(i));
+            }
+            vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+
             cur_t = times[i];
         }
 
@@ -172,16 +199,11 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                                     (abs_max_numeric[node_iter] - abs_min_numeric[node_iter]);
                 }
                 
-                if (dimension1 == 1) {
-                    int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
-                    // Sample test to make sure tokens are mapped to the same buckets over time
-                    /*if (are_same(tmp_original_numeric, 7.37379)) {
-                        cout << cur_numeric[node_iter] << endl;
-                        cout << bucket_index << endl;
-                        cout << "---" << endl;
-                    }*/
-                    words_to_bucket[bucket_index].push_back(tmp_original_numeric);
-                }
+                int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
+                /*if (are_same(tmp_original_numeric, 1.82161)) {
+                    cout << bucket_index << endl;
+                }*/
+                words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
                 numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
                 numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
                 t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
@@ -196,15 +218,18 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         total_count.insert(cur_numeric, cur_categ, 1);
 
         for (int node_iter = 0; node_iter < dimension2; node_iter++) {
+            int tmp_original_categoric = cur_categ[node_iter];
             categ_score[node_iter].insert(cur_categ[node_iter], 1);
             categ_total[node_iter].insert(cur_categ[node_iter], 1);
-            if (cur_categ[node_iter] == 0) {
+            if (cur_categ[node_iter] == 0 || categ_score[node_iter].get_count(cur_categ[node_iter]) <= min_count) {
                 t = 0;
             } else {
                 t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
                                    categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t,
                                    smoothing_factor);                
             }
+            int bucket_index = categ_score[node_iter].get_bucket(tmp_original_categoric);
+            words_to_bucket.at(dimension1+node_iter)[bucket_index].push_back(tmp_original_categoric);
             decomposed_scores.push_back(t);
             sum = sum+t;
         }

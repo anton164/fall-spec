@@ -55,6 +55,13 @@ parser.add_argument(
     help='MStream smoothing term'
 )
 parser.add_argument(
+    '--mstream_mincount',
+    required=False,
+    default=0,
+    type=int,
+    help='MStream min count term'
+)
+parser.add_argument(
     '--mstream_buckets', 
     required=False,
     default=1024,
@@ -93,6 +100,14 @@ with Timer("prepare mstream data"):
         f"--fasttext_limit {args.fasttext_limit}",
     ]))
 
+with open('./MStream/data/'+output_name+'_numeric.txt', 'r') as fp:
+    number_of_lines = len(fp.readlines())
+    print('Total lines records:', number_of_lines)
+
+with open('./MStream/data/'+output_name+'_categ.txt', 'r') as fp:
+    number_of_lines = len(fp.readlines())
+    print('Total lines records:', number_of_lines)
+
 # Run MStream
 with Timer("Run & compile MSTREAM"):
     os.chdir("mstream/mstream")
@@ -113,7 +128,10 @@ with Timer("Run & compile MSTREAM"):
         f"-b {args.mstream_buckets}",
         f"-beta {args.mstream_beta}",
         f"-absminmax {args.abs_min_max}",
-        f"-tb 'data/{output_name}_token_buckets.txt'"
+        f"-tb 'data/{output_name}_token_buckets.txt'",
+        f"-col 'data/{output_name}_columns.txt'",
+        f"-mincount {args.mstream_mincount}",
+        
     ])
     print("Running MSTREAM...")
     os.system(cmd)

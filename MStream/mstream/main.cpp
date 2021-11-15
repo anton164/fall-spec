@@ -149,6 +149,9 @@ int main(int argc, const char *argv[]) {
     program.add_argument("-tb", "--token_buckets")
             .required()
             .help("Token buckets filename file is required");
+    program.add_argument("-col", "--columns")
+            .required()
+            .help("Columns filename file is required");
     program.add_argument("-r", "--rows")
             .default_value(2)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -169,6 +172,10 @@ int main(int argc, const char *argv[]) {
             .default_value(0)
             .action([](const std::string &value) { return std::stoi(value); })
             .help("Beta: Anomaly Scoring Smoothing Term. Default is 0");
+    program.add_argument("-mincount", "--mincount")
+            .default_value(0)
+            .action([](const std::string &value) { return std::stoi(value); })
+            .help("Min count: Inspired by TF-IDF. Default is 0");
     program.add_argument("-o", "--output").default_value(string("scores.txt")).help(
             "Output File. Default is scores.txt");
     try {
@@ -188,10 +195,12 @@ int main(int argc, const char *argv[]) {
     string decomposed_scores_filename = program.get<string>("-d");
     string decomposed_scores_p_filename = program.get<string>("-dp");
     string token_buckets_filename = program.get<string>("-tb");
+    string columns_filename = program.get<string>("-col");
     int abs_min_max = program.get<int>("-absminmax");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     int beta = program.get<int>("-beta");
+    int min_count = program.get<int>("-mincount");
     auto alpha = program.get<double>("-a");
 
     if (rows < 1) {
@@ -239,7 +248,7 @@ int main(int argc, const char *argv[]) {
     //vector<double> scores_decomposed = new vector<double>(length);
     std::vector<string> scores_decomposed(length);
     std::vector<string> scores_decomposed_p(length);
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename, abs_min_max);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename, abs_min_max, columns_filename, min_count);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");
