@@ -11,6 +11,7 @@ public:
     double get_count(long cur_int);
     void clear();
     void lower(double factor);
+    int get_hash(long cur_int);
 
 private:
     int num_rows;

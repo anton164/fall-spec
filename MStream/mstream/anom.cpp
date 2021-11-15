@@ -83,7 +83,10 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<Numerichash> numeric_total(dimension1, Numerichash(num_rows, num_buckets));
     vector<Categhash> categ_score(dimension2, Categhash(num_rows, num_buckets));
     vector<Categhash> categ_total(dimension2, Categhash(num_rows, num_buckets));
-    vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+    //vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+    vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+    cout << "Dimension of 3d vector" << endl;
+    cout << dimension1+dimension2 << endl;
 
     vector<double> cur_numeric(0);
     vector<double> max_numeric(0);
@@ -103,8 +106,11 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
             for (int j = 0; j < dimension2; j++) {
                 categ_score[j].lower(factor);
             }
-            save_token_buckets(token_buckets_filename, words_to_bucket);
-            vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+            for (int i = 0; i < words_to_bucket.size(); i++) {
+                save_token_buckets(token_buckets_filename, words_to_bucket.at(i));
+            }
+            //vector<vector<double>> words_to_bucket(num_buckets, vector<double> (0, 0));
+            vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
             cur_t = times[i];
         }
 
@@ -129,14 +135,17 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                     else cur_numeric[node_iter] = (cur_numeric[node_iter] - min_numeric[node_iter]) /
                                     (max_numeric[node_iter] - min_numeric[node_iter]);
                 }
-                if (dimension1 == 1) {
+                /*if (dimension1 == 1) {
                     int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
                     // Sample test to make sure tokens are mapped to the same buckets over time
-                    /*if (are_same(tmp_original_numeric,1.35)) {
+                    if (are_same(tmp_original_numeric,1.35)) {
                         cout << bucket_index << endl;
-                    }*/
-                    words_to_bucket[bucket_index].push_back(tmp_original_numeric);
-                }
+                    }
+                    words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
+                }*/
+                int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
+                cout << bucket_index << "bucket index" << endl;
+                words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
                 numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
                 numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
                 t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
@@ -151,6 +160,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         total_count.insert(cur_numeric, cur_categ, 1);
 
         for (int node_iter = 0; node_iter < dimension2; node_iter++) {
+            double tmp_original_categoric = cur_categ[node_iter];
             categ_score[node_iter].insert(cur_categ[node_iter], 1);
             categ_total[node_iter].insert(cur_categ[node_iter], 1);
             if (cur_categ[node_iter] == 0 || categ_score[node_iter].get_count(cur_categ[node_iter]) <= 5) {
@@ -160,6 +170,10 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                                    categ_score[node_iter].get_count(cur_categ[node_iter]), cur_t,
                                    smoothing_factor);                
             }
+            int bucket_index = categ_score[node_iter].get_hash(tmp_original_categoric);
+            cout << "Dimeension categorical to which pushed" << endl;
+            cout << dimension1+node_iter << endl;
+            words_to_bucket.at(dimension1+node_iter)[bucket_index].push_back(tmp_original_categoric);
             decomposed_scores.push_back(t);
             sum = sum+t;
         }
