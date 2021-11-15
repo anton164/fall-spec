@@ -79,6 +79,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--mention_encoding', 
+    required=False,
+    default="None",
+    help='Type of mention encoding [None, Categorical]'
+)
+
+parser.add_argument(
     '--window_size', 
     required=False,
     default=30,
@@ -194,16 +201,16 @@ if __name__ == "__main__":
         extra_columns.append("text")
     if args.hashtag_encoding != "None":
         extra_columns.append("hashtags")
-    
     if args.retweet_encoding != "None":
         extra_columns.append("retweeted")
+    if args.mention_encoding != "None":
+        extra_columns.append("mentions")
     
     if len(extra_columns) == 0:
         processed_df = df.reset_index()[base_columns]
     else:
         processed_df = pd.DataFrame(columns = base_columns)
         for col in extra_columns:
-            # Hashtag feature encoding
             if col == "retweeted":
                 if (args.retweet_encoding == "Categorical"):
                     df['retweeted'] = df['retweeted'].apply(
@@ -226,6 +233,16 @@ if __name__ == "__main__":
                             tmp_df[other_col] = 0
                     processed_df = pd.concat([processed_df, tmp_df])
                     symbolic_index.append('hashtags')
+            if col == "mentions":
+                if (args.retweet_encoding == "Categorical"):
+                    df['mentions'] = df['mentions'].apply(lambda xs: [x.lower() for x in xs])
+                    print("Encoding mentions as a categorical feature...")
+                    tmp_df = df.reset_index()[base_columns+[col]].explode(col)
+                    for other_col in extra_columns:
+                        if other_col != col:
+                            tmp_df[other_col] = 0
+                    processed_df = pd.concat([processed_df, tmp_df])
+                    symbolic_index.append('mentions')
             if col == "text":
                 # Text feature encoding
                 df['text'] = df['text'].apply(lambda x: preprocess_text(
@@ -293,6 +310,7 @@ if __name__ == "__main__":
     df[[
         "text",
         "hashtags",
+        "mentions",
         "retweeted",
         "created_at"
     ]].rename(columns={

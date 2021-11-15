@@ -34,6 +34,7 @@ def render_mstream_results():
         "mstream_anomaly_score",
         "record_score",
         "hashtags_score",
+        "mentions_score",
         "text_score",
         "retweeted_score"
     ]
