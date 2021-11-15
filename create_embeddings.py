@@ -33,14 +33,14 @@ def load_fasttext(limit):
         return fasttext
 
 
-def tokenize_dataframe_fasttext(df, process_text=True, fasttext_limit=100000000):
+def tokenize_dataframe_fasttext(df, process_text=True, fasttext_limit=100000000, input_col="text"):
     if process_text:
         print("Preprocessing text...")
-        df['text_tokenized'] = df['text'].apply(lambda x: 
+        df['text_tokenized'] = df[input_col].apply(lambda x: 
             preprocess_text(x)
         )
     else:
-        df['text_tokenized'] = df['text']
+        df['text_tokenized'] = df[input_col]
     print("Loading embeddings...")
     fasttext = load_fasttext(fasttext_limit)
     print("Constructing vocabulary from dataframe...")

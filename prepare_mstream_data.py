@@ -116,6 +116,12 @@ def c_round(n, decimals=0):
         return math.floor(expoN) / 10 ** decimals
     return math.ceil(expoN) / 10 ** decimals
 
+def map_word_to_umap(word, fasttext_dr):
+    if word not in fasttext_dr:
+        return UNK
+    else:
+        return c_round(fasttext_dr[word], 5)
+
 if __name__ == "__main__":
     parser.add_argument(
         'input_file',  
@@ -155,14 +161,6 @@ if __name__ == "__main__":
                 return " ".join([random.choice(random_strings) for i in range(random.randint(0, 4))])
             else:
                 return ""
-    
-
-
-    def map_word_to_umap(word, fasttext_dr):
-        if word not in fasttext_dr:
-            return UNK
-        else:
-            return c_round(fasttext_dr[word], 5)
 
     # Load labels from merlion
     anomaly_threshold = args.merlion_anomaly_threshold
