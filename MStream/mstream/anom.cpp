@@ -153,7 +153,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         for (int node_iter = 0; node_iter < dimension2; node_iter++) {
             categ_score[node_iter].insert(cur_categ[node_iter], 1);
             categ_total[node_iter].insert(cur_categ[node_iter], 1);
-            if (cur_categ[node_iter] == 0) {
+            if (cur_categ[node_iter] == 0 || categ_score[node_iter].get_count(cur_categ[node_iter]) <= 5) {
                 t = 0;
             } else {
                 t = counts_to_anom(categ_total[node_iter].get_count(cur_categ[node_iter]),
