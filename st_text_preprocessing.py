@@ -81,8 +81,8 @@ def render_text_preprocessing():
 
     st.header("How does it translate to UMAP?")
 
-    col1, col2, col3 = st.columns(3)
     st.subheader("UMAP Parameters")
+    col1, col2, col3 = st.columns(3)
     umap_spread = col1.number_input("Spread", value=1)
     umap_min_dist = col2.number_input("Min dist", value=0.1)
 
