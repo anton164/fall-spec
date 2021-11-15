@@ -103,11 +103,11 @@ def render_text_preprocessing():
     umap_spread = df_vocab["umap_representation"].max() - df_vocab["umap_representation"].min()
     st.write(df_vocab)
 
-    st.write("**UMAP representation vs. occurrences**")
     st.write(f"**UMAP value spread:** {umap_spread}")
     st.write(px.scatter(
         x=df_vocab["umap_representation"],
-        y=df_vocab["occurrences"]
+        y=df_vocab["occurrences"],
+        title="UMAP representation (y) vs. vocab occurrences (x)"
     ))
 
     st.header("Approximate LSH")
