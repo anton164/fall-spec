@@ -52,7 +52,12 @@ def load_tweet_dataset(location):
 
     df_tweets["retweeted"] = df_tweets.retweeted.apply(lambda x: None if x == "None" else x)
     df_tweets["quoted"] = df_tweets.quoted.apply(lambda x: None if x == "None" else x)
-    df_tweets["replied_to"] = df_tweets.replied_to.apply(lambda x: None if x == "None" else x)
+
+    # Support for loading voterfraud2020 sample which has no replies
+    if "replied_to" in df_tweets.columns:
+        df_tweets["replied_to"] = df_tweets.replied_to.apply(lambda x: None if x == "None" else x)
+    else:
+        df_tweets["replied_to"] = "None"
 
     # lower entities
     df_tweets["hashtags"] = df_tweets.hashtags.apply(lambda xs: [x.lower() for x in xs])

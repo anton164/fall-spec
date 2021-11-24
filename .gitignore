@@ -137,8 +137,10 @@ config/*
 MStream/mstream/mstream
 MStream/mstream/*.o
 MStream/data/*
-data/tweet_objects/*
 
 .DS_Store
 
+# Data
+data/tweet_objects/*
 data/embeddings
+data/voterfraud2020
