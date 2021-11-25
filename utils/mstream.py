@@ -68,3 +68,47 @@ def load_mstream_predictions(df_tweets, mstream_scores_file, mstream_labels_file
     df_tweets[decomposed_p_scores_columns] = pd.DataFrame(df_tweets['mstream_decomposed_p_anomaly_score_tmp'].tolist(), index= df_tweets.index)
 
     return df_tweets.set_index("id")
+
+def load_mstream_results_for_dataset(dataset_name, df_tweets, mstream_data_dir="./MStream/data/"):
+    mstream_scores_file = f"{mstream_data_dir}{dataset_name}_score.txt"
+    mstream_labels_file = f"{mstream_data_dir}{dataset_name}_predictions.txt"
+    mstream_decomposed_scores_file = f"{mstream_data_dir}{dataset_name}_decomposed.txt"
+    mstream_decomposed_p_scores_file = f"{mstream_data_dir}{dataset_name}_decomposed_percentage.txt"
+    columns_names_file = f"{mstream_data_dir}{dataset_name}_columns.txt"
+
+    df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle").rename(
+        columns={"text": "tokens"} # backwards-compatibility
+    )
+    df_tweets_with_mstream_output = load_mstream_predictions(
+        df_tweets,
+        mstream_scores_file,
+        mstream_labels_file,
+        mstream_decomposed_scores_file,
+        mstream_decomposed_p_scores_file,
+        columns_names_file
+    )
+    score_columns = ['mstream_anomaly_score'] + read_columns(columns_names_file)
+    columns = ["raw_tweet_text"] + score_columns
+    df_mstream_input[columns] = df_tweets_with_mstream_output[
+        ["text"]
+        + score_columns
+    ]
+    df_mstream_input["is_retweet"] = df_mstream_input.apply(
+        lambda t: df_tweets_with_mstream_output.loc[t.name].retweeted is not None
+        , axis=1
+    )
+    if "tokens" in df_mstream_input:
+        df_mstream_input["token_length"] = df_mstream_input.tokens.apply(
+            lambda t: len(t)
+        )
+
+    timestep_dict = {}
+    def convert_to_timestep(val):
+        if val not in timestep_dict:
+            timestep_dict[val] = len(timestep_dict) + 1
+        return len(timestep_dict)
+    df_mstream_input["timestep"] = df_mstream_input.created_at_buckets.apply(
+        lambda x: convert_to_timestep(x)
+    )
+
+    return df_mstream_input, score_columns
