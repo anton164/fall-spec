@@ -300,11 +300,18 @@ if __name__ == "__main__":
     df_symbolic = processed_df.loc[:, symbolic_index]
     df_label = processed_df.loc[:, ['is_anomaly']]
 
+    categorical_val_lookup = {}
     for feature in symbolic_index:
         categorical_feat_dict = {}
         for i, entry in enumerate(df_symbolic.loc[:,feature].unique()):
             categorical_feat_dict[entry] = i
         df_symbolic.loc[:, feature] =  df_symbolic.loc[:,feature].map(categorical_feat_dict)
+
+        categorical_val_lookup[feature] = {v:k for k,v in categorical_feat_dict.items()}
+
+    with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categorical_val_lookup.json", "w") as f:
+        json.dump(categorical_val_lookup, f)
+
     df[[
         "text",
         "hashtags",
