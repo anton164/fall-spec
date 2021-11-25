@@ -1,8 +1,8 @@
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
 from utils.anomaly_bucket import BucketCollection, load_all_buckets_for_dataset
-from utils.dataset import load_tweet_dataset
 from utils.mstream import load_mstream_results_for_dataset
+from create_embeddings import load_fasttext
 from utils.st_utils import st_select_file
 import json
 import pandas as pd
@@ -22,7 +22,7 @@ def st_read_buckets(dataset_name, vocabulary):
 
 @st.cache(allow_output_mutation=True)
 def st_load_fasttext():
-    return KeyedVectors.load_word2vec_format('./data/embeddings/fasttext/wiki-news-300d-1M.vec')
+    return load_fasttext(100000000)
 
 def embedding_stats(bucket_embeddings):
     tokens = [x[0] for x in bucket_embeddings]
