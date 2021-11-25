@@ -1,4 +1,4 @@
-from utils.mstream import load_mstream_predictions, load_mstream_results_for_dataset
+from utils.mstream import SCORE_HANDLING_OPTIONS, load_mstream_predictions, load_mstream_results_for_dataset
 from utils.st_utils import st_select_file
 from utils.dataset import count_array_column, load_tweet_dataset, read_columns
 import streamlit as st
@@ -23,8 +23,13 @@ def render_mstream_results():
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
     st.header("Explore MStream Results")
 
+    score_handling = st.selectbox(
+        "MSTREAM Score Handling", 
+        options=list(SCORE_HANDLING_OPTIONS.values())
+    )
     df_mstream_input, score_columns = load_mstream_results_for_dataset(
-        dataset_name
+        dataset_name,
+        score_handling
     )
     st.write(f"df_mstream_input has {df_mstream_input.shape[0]:,} tweets")
 

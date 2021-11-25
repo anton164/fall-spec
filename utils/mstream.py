@@ -74,7 +74,13 @@ def load_mstream_predictions(
 
     return df_mstream_input.set_index("id")
 
-def load_mstream_results_for_dataset(dataset_name, score_handling="unique_tweet_scores", mstream_data_dir="./MStream/data/"):
+SCORE_HANDLING_OPTIONS = {
+    "unique_tweet_scores": "Unique tweet scores",
+    "timestep_mean": "Timestep mean",
+    "timestep_max": "Timestep max"
+}
+
+def load_mstream_results_for_dataset(dataset_name, score_handling=SCORE_HANDLING_OPTIONS["unique_tweet_scores"], mstream_data_dir="./MStream/data/"):
     mstream_scores_file = f"{mstream_data_dir}{dataset_name}_score.txt"
     mstream_labels_file = f"{mstream_data_dir}{dataset_name}_predictions.txt"
     mstream_decomposed_scores_file = f"{mstream_data_dir}{dataset_name}_decomposed.txt"
@@ -84,7 +90,7 @@ def load_mstream_results_for_dataset(dataset_name, score_handling="unique_tweet_
     df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle").rename(
         columns={"text": "tokens"} # backwards-compatibility
     ).sort_values("created_at")
-    df_tweets_with_mstream_output = load_mstream_predictions(
+    df_mstream_input = load_mstream_predictions(
         df_mstream_input.reset_index(),
         mstream_scores_file,
         mstream_labels_file,
@@ -92,26 +98,33 @@ def load_mstream_results_for_dataset(dataset_name, score_handling="unique_tweet_
         mstream_decomposed_p_scores_file,
         columns_names_file
     )
+    print(df_mstream_input.columns)
     score_columns = ['mstream_anomaly_score'] + read_columns(columns_names_file)
-    columns = score_columns + ["mstream_is_anomaly"]
-    df_mstream_input[columns] = df_tweets_with_mstream_output[
-        score_columns + ["mstream_is_anomaly"]
-    ]
-    df_mstream_input["is_retweet"] = df_mstream_input.apply(
-        lambda t: df_tweets_with_mstream_output.loc[t.name].retweeted is not None
-        , axis=1
+    df_mstream_input["is_retweet"] = df_mstream_input.retweeted.apply(
+        lambda val: val is not None
     )
     if "tokens" in df_mstream_input:
         df_mstream_input["token_length"] = df_mstream_input.tokens.apply(
             lambda t: len(t)
         )
+    # Score handling
+    if score_handling == SCORE_HANDLING_OPTIONS["unique_tweet_scores"]:
+        pass
+    elif score_handling == SCORE_HANDLING_OPTIONS["timestep_mean"]:
+        for score_column in score_columns:
+            score_mean = df_mstream_input.groupby(['created_at_bucket'])[score_column].transform(np.mean)
+            df_mstream_input[score_column] = score_mean
+    elif score_handling == SCORE_HANDLING_OPTIONS["timestep_max"]:
+        for score_column in score_columns:
+            score_max = df_mstream_input.groupby(['created_at_bucket'])[score_column].transform(max)
+            df_mstream_input[score_column] = score_max
 
     timestep_dict = {}
     def convert_to_timestep(val):
         if val not in timestep_dict:
             timestep_dict[val] = len(timestep_dict) + 1
         return len(timestep_dict)
-    df_mstream_input["timestep"] = df_mstream_input.created_at_buckets.apply(
+    df_mstream_input["timestep"] = df_mstream_input.created_at_bucket.apply(
         lambda x: convert_to_timestep(x)
     )
 
