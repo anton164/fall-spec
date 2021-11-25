@@ -7,24 +7,12 @@ pipeline for a labeled dataset
 
 
 import os
-from utils.dataset import load_tweet_dataset
 import subprocess
 from prepare_mstream_data import parser
 import time
+from utils import Timer
 
 global_start_time = time.time()
-class Timer(object):
-    def __init__(self, message: str):
-        self.message = message
-      
-    def __enter__(self):
-        self.start_time = time.time()
-        
-  
-    def __exit__(self, etype, value, traceback):
-        elapsed_time = time.time() - self.start_time
-        print(f"[Timer]: {self.message} took {elapsed_time}s")
-  
 
 def run_command(cmd: str):
     print("[Command]:", cmd)
@@ -86,12 +74,6 @@ args = parser.parse_args()
 
 print("Args", args)
 output_name = args.input_file.replace(".json", "")
-
-with Timer("Load data"):
-    print("Loading tweet dataset...")
-    df = load_tweet_dataset(
-        INPUT_DATA_LOCATION + args.input_file
-    ).set_index("id")
 
 # Convert labeled dataset to mstream dataset
 with Timer("prepare mstream data"):
