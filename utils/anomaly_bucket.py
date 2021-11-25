@@ -27,11 +27,14 @@ class AnomalyBucket:
     
     def hashed_value_count(self):
         return len(self.hashed_feature_values)
+
+    def values_at_timestep(self, timestep):
+        return self.hashed_feature_value_counts_over_timesteps[timestep]
     
     def timeseries(self, n_timesteps):
         data = []
         for timestep in range(n_timesteps):
-            data.append(self.hashed_feature_value_counts_over_timesteps[timestep])
+            data.append(self.values_at_timestep(timestep))
         
         return pd.DataFrame(data).fillna(0)
 
@@ -58,7 +61,15 @@ class BucketCollection:
     
     def count_unique_values(self):
         return sum([bucket.hashed_value_count() for bucket in self.by_index.values()])
- 
+
+    def get_buckets_by_timestep(self, timestep):
+        buckets_at_timestep = []
+        for bucket in self.sorted_by_frequency:
+            n_values = len(bucket.hashed_feature_value_counts_over_timesteps[timestep])
+            if (n_values > 0):
+                buckets_at_timestep.append(bucket)
+        return buckets_at_timestep
+
 def umap_key(val):
     round_decimals = 5
     if (abs(val)) > 10:
@@ -90,7 +101,9 @@ def read_buckets_generic(file, map_value_to_feature):
                     bucket.hashed_feature_values[val] = map_value_to_feature(val)
                     prev_val_count = bucket.hashed_feature_value_counts[val]
                     bucket.hashed_feature_value_counts[val] = val_counter
-                    bucket.hashed_feature_value_counts_over_timesteps[timestep][map_value_to_feature(val)] = val_counter - prev_val_count
+                    val_count_at_timestep = val_counter - prev_val_count
+                    if val_count_at_timestep > 0:
+                        bucket.hashed_feature_value_counts_over_timesteps[timestep][map_value_to_feature(val)] = val_count_at_timestep
             total_timesteps = timestep
         total_timesteps += 1 # because it starts at 0
     print(f"Found {len(value_to_bucket_index)} unique values when reading bucket file {file}")

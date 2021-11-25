@@ -1,6 +1,8 @@
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
 from utils.anomaly_bucket import BucketCollection, load_all_buckets_for_dataset
+from utils.dataset import load_tweet_dataset
+from utils.mstream import load_mstream_results_for_dataset
 from utils.st_utils import st_select_file
 import json
 import pandas as pd
@@ -120,6 +122,7 @@ def render_buckets():
         data_dir,
         ".json"
     )
+    df_tweets = load_tweet_dataset(selected_dataset)
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
     dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
 
@@ -150,7 +153,28 @@ def render_buckets():
         )
         top_bucket = buckets.by_index[selected_bucket]
         st.write(f"Bucket hash frequency: {top_bucket.hash_frequency()}")
-        st.write(top_bucket.timeseries(buckets.total_timesteps))
+        bucket_timeseries = top_bucket.timeseries(buckets.total_timesteps)
+        df_mstream_input, score_columns = load_mstream_results_for_dataset(
+            dataset_name,
+            df_tweets
+        )
+        st.write(df_mstream_input.timestep.max())
+        
+        st.subheader("Top Anomalies")
+        present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
+        selected_score_column = st.selectbox("By score", options=present_score_columns)
+        n_tweets = st.number_input("Number of tweets to show", value=100)
+        df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
+        st.write(
+            df_top_anoms
+        )
+        selected_timestep = st.number_input("Select a timestep to inspect buckets", value=0)
+
+        active_buckets = buckets.get_buckets_by_timestep(selected_timestep)
+        st.write(f"**Active buckets:** {len(active_buckets)}")
+        
+        for bucket in active_buckets:
+            st.write(bucket.values_at_timestep(selected_timestep))
 
 if __name__ == "__main__":
     render_buckets()
