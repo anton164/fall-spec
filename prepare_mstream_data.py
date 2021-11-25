@@ -107,6 +107,13 @@ parser.add_argument(
     default=100000000,
     help='Limit number of fasttext vectors'
 )
+parser.add_argument(
+    '--downsample', 
+    type=float,
+    required=False,
+    default=1,
+    help='Downsample the dataset. 1 - retains the whole dataset , 0.5 - samples half'
+)
 
 # https://stackoverflow.com/questions/33019698/how-to-properly-round-up-half-float-numbers
 # specify custom rounding method to be consistent with C
@@ -136,6 +143,11 @@ if __name__ == "__main__":
     df = load_tweet_dataset(
         INPUT_DATA_LOCATION + args.input_file
     ).set_index("id")
+
+    if (args.downsample < 1):
+        df_downsampled = df.sample(frac=args.downsample)
+        print(f"Downsampled dataset, from {df.shape[0]} to {df_downsampled.shape[0]} rows")
+        df = df_downsampled
 
     def create_unix(x):
         return int(time.mktime((x).timetuple()))

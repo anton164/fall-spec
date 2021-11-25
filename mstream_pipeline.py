@@ -109,6 +109,7 @@ with Timer("prepare mstream data"):
         f"--hashtag_filter {args.hashtag_filter}",
         f"--unix_timestamp {args.unix_timestamp}",
         f"--fasttext_limit {args.fasttext_limit}",
+        f"--downsample {args.downsample}",
     ]))
 
 with open('./MStream/data/'+output_name+'_numeric.txt', 'r') as fp:
