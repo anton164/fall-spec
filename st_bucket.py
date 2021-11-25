@@ -154,6 +154,7 @@ def render_buckets():
         top_bucket = buckets.by_index[selected_bucket]
         st.write(f"Bucket hash frequency: {top_bucket.hash_frequency()}")
         bucket_timeseries = top_bucket.timeseries(buckets.total_timesteps)
+        st.write(bucket_timeseries)
         df_mstream_input, score_columns = load_mstream_results_for_dataset(
             dataset_name,
             df_tweets
