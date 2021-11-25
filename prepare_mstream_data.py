@@ -178,6 +178,9 @@ if __name__ == "__main__":
             axis=1
         )
 
+    # Window size
+    df["created_at_buckets"] = df['created_at'].dt.ceil(str(args.window_size) + 'Min')
+
     # Text parsing
     if (args.text_synthetic > 0):
         random_strings = generate_random_strings(args.text_synthetic)
@@ -193,7 +196,7 @@ if __name__ == "__main__":
         print(df["text"].sample(10))
     
 
-    base_columns = ["id", "created_at", "is_anomaly"]
+    base_columns = ["id", "created_at_buckets", "is_anomaly"]
     extra_columns = []
     if args.text_encoding != "None":
         extra_columns.append("text")
@@ -295,22 +298,30 @@ if __name__ == "__main__":
                     with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_vocabulary.json", "w") as f:
                         json.dump(vocabulary_dump, f)
                     
-    processed_df = processed_df.sort_values(by=['id', 'created_at'], ascending = (True, True))
+    processed_df = processed_df.sort_values(by=['id', 'created_at_buckets'], ascending = (True, True))
     df_continuous = processed_df.loc[:, continuous_index]
     df_symbolic = processed_df.loc[:, symbolic_index]
     df_label = processed_df.loc[:, ['is_anomaly']]
 
+    categorical_val_lookup = {}
     for feature in symbolic_index:
         categorical_feat_dict = {}
         for i, entry in enumerate(df_symbolic.loc[:,feature].unique()):
             categorical_feat_dict[entry] = i
         df_symbolic.loc[:, feature] =  df_symbolic.loc[:,feature].map(categorical_feat_dict)
+
+        categorical_val_lookup[feature] = {v:k for k,v in categorical_feat_dict.items()}
+
+    with open(f"{OUTPUT_DATA_LOCATION}{args.output_name}_categorical_val_lookup.json", "w") as f:
+        json.dump(categorical_val_lookup, f)
+
     df[[
         "text",
         "hashtags",
         "mentions",
         "retweeted",
-        "created_at"
+        "created_at",
+        "created_at_buckets"
     ]].rename(columns={
         "text": "tokens"
     }).astype({
@@ -321,13 +332,13 @@ if __name__ == "__main__":
     df_label.to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_label.txt", index=False, header=False)
 
     processed_df.reset_index()[["id"]].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_tweet_id.txt", index=False, header=False)
-    processed_df.loc[:,'created_at'] = pd.to_datetime(processed_df['created_at']).dt.floor(str(args.window_size) + 'T').map(create_unix)
+    processed_df.loc[:,'created_at_buckets'] = processed_df['created_at_buckets'].map(create_unix)
     if args.unix_timestamp == 0:
         timestamp_dict = {}
-        for i, entry in enumerate(processed_df.loc[:,'created_at'].unique()):
+        for i, entry in enumerate(processed_df.loc[:,'created_at_buckets'].unique()):
             timestamp_dict[entry] = i
-        processed_df.loc[:, 'created_at'] =  processed_df.loc[:,'created_at'].map(timestamp_dict)
-    processed_df.loc[:,'created_at'].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
+        processed_df.loc[:, 'created_at_buckets'] =  processed_df.loc[:,'created_at_buckets'].map(timestamp_dict)
+    processed_df.loc[:,'created_at_buckets'].to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_time.txt", index=False, header=False)
     processed_df.reset_index()[["id"]].duplicated().astype(int).to_csv(f"{OUTPUT_DATA_LOCATION}{args.output_name}_ignore_score_record.txt", index=False, header=False)
 
     # save columns used

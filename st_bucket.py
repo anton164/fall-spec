@@ -1,6 +1,8 @@
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
-from utils.anomaly_bucket import BucketCollection, read_buckets
+from utils.anomaly_bucket import BucketCollection, load_all_buckets_for_dataset
+from utils.dataset import load_tweet_dataset
+from utils.mstream import load_mstream_results_for_dataset
 from utils.st_utils import st_select_file
 import json
 import pandas as pd
@@ -12,8 +14,11 @@ def cosine_similarity(a, b):
     return np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b))
 
 @st.cache(allow_output_mutation=True)
-def st_read_buckets(bucket_file, vocabulary):
-    return BucketCollection(read_buckets(bucket_file, vocabulary))
+def st_read_buckets(dataset_name, vocabulary):
+    return load_all_buckets_for_dataset(
+        dataset_name, 
+        vocabulary
+    )
 
 @st.cache(allow_output_mutation=True)
 def st_load_fasttext():
@@ -47,25 +52,9 @@ def embedding_stats(bucket_embeddings):
         columns=["token1", "token2", "cosine_similarity", "euclidean_distance"]
     )
 
-def render_buckets():
-    st.header("Buckets")
-    data_dir = "./data/labeled_datasets"
+def render_text_buckets(buckets, vocabulary):
     fasttext = st_load_fasttext()
-    selected_dataset = st_select_file(
-        "Select dataset",
-        data_dir,
-        ".json"
-    )
-    dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
-    dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
-    dataset_token_buckets = f"./MStream/data/{dataset_name}_token_buckets.txt"
-
-    with open(dataset_vocabulary, "r") as f:
-        vocabulary = json.load(f)
-    
-    buckets = st_read_buckets(dataset_token_buckets, vocabulary)
-    
-    for bucket in buckets.sorted:
+    for bucket in buckets.sorted_by_collisions:
         for token in bucket.hashed_feature_values.values():
             vocabulary[token]["bucket_index"] = bucket.bucket_index
 
@@ -81,17 +70,10 @@ def render_buckets():
         df_vocab
     )
 
-    n_buckets = buckets.size()
-    n_unique_values = buckets.count_unique_values()
-    utilized_buckets = buckets.count_utilized_buckets()
-
-    st.write(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
-    st.write(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
-
     fig = go.Figure()
     df_vocab_in_buckets = df_vocab[~pd.isna(df_vocab.bucket_index)].sort_values("umap_representation")
     st.subheader("Token -> Bucket visualization")
-    for bucket in buckets.sorted:
+    for bucket in buckets.sorted_by_collisions:
         bucket_index = bucket.bucket_index
         df = df_vocab_in_buckets[df_vocab_in_buckets.bucket_index == bucket_index]
         if (len(df) > 0):
@@ -110,11 +92,11 @@ def render_buckets():
     )
     st.write(fig)
 
-    selected_bucket = int(st.number_input(
-        "Inspect a bucket (sorted by number of values in the bucket)", 
-        value=0
-    ))
-    top_bucket = buckets.sorted[selected_bucket]
+    selected_bucket = st.selectbox(
+        "Inspect a bucket (sorted by number of hash collisions)", 
+        options=[bucket.bucket_index for bucket in buckets.sorted_by_collisions]
+    )
+    top_bucket = buckets.by_index[selected_bucket]
     df_bucket = pd.DataFrame(
         [(token, vocabulary[token]["occurrences"], umap_value, vocabulary[token]["fasttext_idx"]) 
         for umap_value, token in top_bucket.hashed_feature_values.items()],
@@ -131,6 +113,69 @@ def render_buckets():
     st.write(f"(mean similarity: {df_embedding_stats.cosine_similarity.mean()}")
     st.write(f"(mean distance: {df_embedding_stats.euclidean_distance.mean()}")
     st.dataframe(df_embedding_stats)
+
+def render_buckets():
+    st.header("Buckets")
+    data_dir = "./data/labeled_datasets"
+    selected_dataset = st_select_file(
+        "Select dataset",
+        data_dir,
+        ".json"
+    )
+    df_tweets = load_tweet_dataset(selected_dataset)
+    dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
+    dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
+
+    with open(dataset_vocabulary, "r") as f:
+        vocabulary = json.load(f)
+    
+    buckets_by_feature = st_read_buckets(dataset_name, vocabulary)
+    selected_bucket_feature = st.selectbox(
+        "Select feature to inspect",
+        options=list(buckets_by_feature.keys())
+    )
+    buckets = buckets_by_feature[selected_bucket_feature]
+
+    n_buckets = buckets.size()
+    n_unique_values = buckets.count_unique_values()
+    utilized_buckets = buckets.count_utilized_buckets()
+
+    st.write(f"Timesteps: {buckets.total_timesteps}")
+    st.write(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
+    st.write(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
+    
+    if selected_bucket_feature == "text":
+        render_text_buckets(buckets, vocabulary)
+    else:
+        selected_bucket = st.selectbox(
+            "Inspect a bucket (sorted by bucket hash frequency)", 
+            options=[bucket.bucket_index for bucket in buckets.sorted_by_frequency]
+        )
+        top_bucket = buckets.by_index[selected_bucket]
+        st.write(f"Bucket hash frequency: {top_bucket.hash_frequency()}")
+        bucket_timeseries = top_bucket.timeseries(buckets.total_timesteps)
+        st.write(bucket_timeseries)
+        df_mstream_input, score_columns = load_mstream_results_for_dataset(
+            dataset_name,
+            df_tweets
+        )
+        st.write(df_mstream_input.timestep.max())
+        
+        st.subheader("Top Anomalies")
+        present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
+        selected_score_column = st.selectbox("By score", options=present_score_columns)
+        n_tweets = st.number_input("Number of tweets to show", value=100)
+        df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
+        st.write(
+            df_top_anoms
+        )
+        selected_timestep = st.number_input("Select a timestep to inspect buckets", value=0)
+
+        active_buckets = buckets.get_buckets_by_timestep(selected_timestep)
+        st.write(f"**Active buckets:** {len(active_buckets)}")
+        
+        for bucket in active_buckets:
+            st.write(bucket.values_at_timestep(selected_timestep))
 
 if __name__ == "__main__":
     render_buckets()
