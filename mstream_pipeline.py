@@ -69,6 +69,13 @@ parser.add_argument(
     help='MStream number of buckets'
 )
 parser.add_argument(
+    '--mstream_make_clean', 
+    required=False,
+    default=0,
+    type=int,
+    help='Whether to run make clean before rebuilding mstream'
+)
+parser.add_argument(
     '--abs_min_max', 
     type=int,
     required=False,
@@ -116,7 +123,8 @@ with open('./MStream/data/'+output_name+'_categ.txt', 'r') as fp:
 with Timer("Run & compile MSTREAM"):
     os.chdir("mstream/mstream")
     print("Compiling MStream...")
-    run_command("make clean")
+    if (args.mstream_make_clean):
+        run_command("make clean")
     run_command("make")
     os.chdir("..")
     cmd = " ".join([
