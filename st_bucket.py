@@ -58,7 +58,7 @@ def render_buckets():
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
     dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
-    dataset_token_buckets = f"./MStream/data/{dataset_name}_token_buckets.txt"
+    dataset_token_buckets = f"./MStream/data/{dataset_name}_token_buckets_text_score.txt"
 
     with open(dataset_vocabulary, "r") as f:
         vocabulary = json.load(f)
@@ -131,6 +131,10 @@ def render_buckets():
     st.write(f"(mean similarity: {df_embedding_stats.cosine_similarity.mean()}")
     st.write(f"(mean distance: {df_embedding_stats.euclidean_distance.mean()}")
     st.dataframe(df_embedding_stats)
+    print(buckets.sorted)
+    for i,bucket in enumerate(buckets.sorted):
+        if (len(bucket.hashed_feature_values.items()) > 0):
+            print(bucket.hashed_feature_values.items())
 
 if __name__ == "__main__":
     render_buckets()

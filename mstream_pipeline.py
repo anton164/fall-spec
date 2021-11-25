@@ -96,6 +96,7 @@ with Timer("prepare mstream data"):
         f"--text_synthetic {args.text_synthetic}",
         f"--text_exclude_retweets {args.text_exclude_retweets}",
         f"--text_lemmatize {args.text_lemmatize}",
+        f"--noun_verb {args.noun_verb}",
         f"--hashtag_encoding {args.hashtag_encoding}",
         f"--retweet_encoding {args.retweet_encoding}",
         f"--mention_encoding {args.mention_encoding}",

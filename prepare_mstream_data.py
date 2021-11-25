@@ -58,6 +58,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--noun_verb', 
+    required=False,
+    type=int,
+    default=0,
+    help='Whether only twets with noun verb should be considered'
+)
+
+parser.add_argument(
     '--hashtag_encoding', 
     required=False,
     default="None",
@@ -245,7 +253,8 @@ if __name__ == "__main__":
                 # Text feature encoding
                 df['text'] = df['text'].apply(lambda x: preprocess_text(
                     x,
-                    lemmatize=args.text_lemmatize
+                    lemmatize=args.text_lemmatize,
+                    noun_verb=args.noun_verb
                 ))
                 tmp_df = df.reset_index()[base_columns+[col]].explode(col)
                 for other_col in extra_columns:
@@ -261,7 +270,9 @@ if __name__ == "__main__":
                     vocabulary, tokenized_string_idxs, fasttext_lookup = tokenize_dataframe_fasttext(
                         df,
                         False,
-                        fasttext_limit=args.fasttext_limit
+                        fasttext_limit=args.fasttext_limit,
+                        noun_verb=args.noun_verb,
+                        lemmatize=args.text_lemmatize,
                     )
                     print("Vocabulary size", len(vocabulary))
                     fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
