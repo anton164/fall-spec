@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 from create_embeddings import tokenize_dataframe_fasttext
+from utils import Timer
 from utils.nlp import exclude_retweet_text, preprocess_text
 from utils.dr import basic_umap_dr
 from utils.dataset import load_tweet_dataset
@@ -140,9 +141,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    df = load_tweet_dataset(
-        INPUT_DATA_LOCATION + args.input_file
-    ).set_index("id")
+    with Timer("Load data"):
+        print("Loading tweet dataset...")
+        df = load_tweet_dataset(
+            INPUT_DATA_LOCATION + args.input_file
+        ).set_index("id")
 
     if (args.downsample < 1):
         df_downsampled = df.sample(frac=args.downsample)
@@ -183,6 +186,8 @@ if __name__ == "__main__":
 
     symbolic_index = []
     continuous_index = []
+
+    df["raw_text"] = df["text"]
 
     if (args.text_exclude_retweets):        
         df["text"] = df.apply(
@@ -333,7 +338,9 @@ if __name__ == "__main__":
         "mentions",
         "retweeted",
         "created_at",
-        "created_at_buckets"
+        "is_anomaly",
+        "created_at_buckets",
+        "raw_text",
     ]].rename(columns={
         "text": "tokens"
     }).astype({

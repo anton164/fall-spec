@@ -21,24 +21,40 @@ def render_mstream_results():
         ".json"
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
-    df_tweets = load_tweet_dataset(selected_dataset)
+    df_tweets_original = load_tweet_dataset(selected_dataset, partial=[
+        "id", "created_at", "merlion_anomaly_total_count", "retweeted", "text"
+    ]).set_index("id")
+    st.write(f"The original dataset has {df_tweets_original.shape[0]:,} tweets")
 
     st.header("Explore MStream Results")
 
     df_mstream_input, score_columns = load_mstream_results_for_dataset(
         dataset_name,
-        df_tweets
+        df_tweets_original.reset_index()
     )
+    st.write(f"df_mstream_input has {df_mstream_input.shape[0]:,} tweets")
 
     fig = go.Figure()
 
-
-    show_mstream_input = st.button("Show MStream input")
-    if show_mstream_input:
-        st.subheader("MStream input")
+    if st.checkbox("Show mstream input dataframe"):
         st.write(df_mstream_input)
 
-        df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
+    if st.checkbox("Show volume plot (to inspect downsampling)"):
+        df_original_count = df_tweets_original.reset_index()[['id', 'created_at']]
+        df_mstream_count = df_mstream_input.reset_index()[['id', 'created_at']]
+        df_timeseries = df_original_count.groupby(
+            df_original_count.created_at.dt.ceil("30Min")
+        ).agg(original_dataset_volume=('id', 'count')).join(
+            df_mstream_count.groupby(
+                df_mstream_count.created_at.dt.ceil("30Min")
+            ).agg(mstream_input_volume=('id', 'count'))
+        )
+        st.write(px.line(
+            df_timeseries
+        ))
+
+    show_mstream_input = st.checkbox("Show unique tokens over time")
+    if show_mstream_input:
         unique_tokens = set()
         def unique_tokens_over_time(tokens):
             for token in tokens:
@@ -58,17 +74,17 @@ def render_mstream_results():
         ))
 
     st.write(f"""
-    **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
-    **Recall:** {recall_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
-    **F1_score:** {f1_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}
+    **Precision:** {precision_score(df_mstream_input.is_anomaly, df_mstream_input.mstream_is_anomaly):.2%}  
+    **Recall:** {recall_score(df_mstream_input.is_anomaly, df_mstream_input.mstream_is_anomaly):.2%}  
+    **F1_score:** {f1_score(df_mstream_input.is_anomaly, df_mstream_input.mstream_is_anomaly):.2%}
     """)
 
-    max_mstream_score = df_tweets.mstream_anomaly_score.max()
+    max_mstream_score = df_mstream_input.mstream_anomaly_score.max()
 
     fig.add_trace(
         go.Scatter(
-            x=df_tweets.created_at,
-            y=df_tweets.is_anomaly.astype(int)*max_mstream_score + 20,
+            x=df_mstream_input.created_at,
+            y=df_mstream_input.is_anomaly.astype(int)*max_mstream_score + 20,
             mode='lines',
             name="True labels",
             opacity=0.5
@@ -77,8 +93,8 @@ def render_mstream_results():
 
     fig.add_trace(
         go.Scatter(
-            x=df_tweets.created_at,
-            y=df_tweets.mstream_is_anomaly.astype(int)*max_mstream_score,
+            x=df_mstream_input.created_at,
+            y=df_mstream_input.mstream_is_anomaly.astype(int)*max_mstream_score,
             mode='lines',
             name="Predicted labels",
             opacity=0.5
@@ -87,8 +103,8 @@ def render_mstream_results():
 
     fig.add_trace(
         go.Scatter(
-            x=df_tweets.created_at,
-            y=df_tweets.mstream_anomaly_score,
+            x=df_mstream_input.created_at,
+            y=df_mstream_input.mstream_anomaly_score,
             mode='lines',
             name="Anomaly score",
             opacity=0.5
@@ -96,20 +112,20 @@ def render_mstream_results():
     )
     fig.add_trace(
         go.Scatter(
-            x=df_tweets.created_at,
-            y=df_tweets.record_score,
+            x=df_mstream_input.created_at,
+            y=df_mstream_input.record_score,
             mode='lines',
             name="record_score",
             opacity=0.5
         )
     )
-    for i, val in enumerate(df_tweets.columns):
+    for i, val in enumerate(df_mstream_input.columns):
         if val in score_columns and val not in ['record_score']:
-            #hovertext = df_tweets[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
+            #hovertext = df_mstream_input[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
             fig.add_trace(
                 go.Scatter(
-                    x=df_tweets.created_at,
-                    y=df_tweets[val],
+                    x=df_mstream_input.created_at,
+                    y=df_mstream_input[val],
                     mode='lines',
                     name=" ".join(val.split('_')),
                     opacity=0.5,

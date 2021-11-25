@@ -222,49 +222,23 @@ def render_featurize_tweets():
 
     try:
         df_mstream_input = pd.read_pickle(f"./MStream/data/{dataset_name}_data.pickle")
-        df_tweets_with_mstream_output = load_mstream_predictions(
-            df_tweets,
+        st.write(f"df_mstream_input has {df_mstream_input.shape[0]:,} tweets")
+        df_mstream_input = load_mstream_predictions(
+            df_mstream_input.reset_index(),
             mstream_scores_file,
             mstream_labels_file,
             mstream_decomposed_scores_file,
             mstream_decomposed_p_scores_file,
             columns_names_file
         )
-        df_mstream_input["mstream_anomaly_score"] = df_mstream_input.apply(
-            lambda t: df_tweets_with_mstream_output.loc[t.name].mstream_anomaly_score,
-            axis=1
-        )
+        df_tweets = df_mstream_input[
+            set(df_mstream_input.columns) - set(df_tweets.columns)
+        ].join(df_tweets.set_index("id")).sort_values("created_at").reset_index()
     except Exception as e:
         st.error(f"Failed to load MStream output for {dataset_name}")
         raise e
 
     fig = go.Figure()
-
-
-    show_mstream_input = st.button("Show MStream input")
-    if show_mstream_input:
-        st.subheader("MStream input")
-        st.write(df_mstream_input)
-
-        df_mstream_input["created_at"] = pd.to_datetime(df_mstream_input["created_at"])
-        unique_tokens = set()
-        def unique_tokens_over_time(text):
-            if pd.notna(text):
-                for token in text.split(" "):
-                    unique_tokens.add(token)            
-            return len(unique_tokens)
-        df_unique_tokens = df_mstream_input.groupby(
-            df_mstream_input.created_at.dt.ceil(time_bucket_size)
-        ).agg(
-            unique_tokens=(
-                'text', 
-                lambda text_col: text_col.apply(lambda text: unique_tokens_over_time(text)).max()
-            ),  
-        )
-        st.write(px.line(
-            df_unique_tokens.unique_tokens,
-            title="Number of unique tokens over time"
-        ))
 
     st.write(f"""
     **Precision:** {precision_score(df_tweets.is_anomaly, df_tweets.mstream_is_anomaly):.2%}  
