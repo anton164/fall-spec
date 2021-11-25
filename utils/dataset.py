@@ -46,14 +46,12 @@ def create_tweet_df(raw_dataset_tweets):
     df_tweets = pd.DataFrame(tweets)
     return df_tweets.sort_values("created_at")
 
-def load_tweet_dataset(location, partial=False):
+def load_tweet_dataset(location):
     df_tweets = pd.read_json(location, dtype=tweet_dtypes)
     df_tweets["created_at"] = pd.to_datetime(df_tweets.created_at)
 
     df_tweets["retweeted"] = df_tweets.retweeted.apply(lambda x: None if x == "None" else x)
     df_tweets["quoted"] = df_tweets.quoted.apply(lambda x: None if x == "None" else x)
-    if partial != False:
-        return df_tweets[partial]
 
     # Support for loading voterfraud2020 sample which has no replies
     if "replied_to" in df_tweets.columns:
