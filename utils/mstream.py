@@ -74,7 +74,7 @@ def load_mstream_predictions(
 
     return df_mstream_input.set_index("id")
 
-def load_mstream_results_for_dataset(dataset_name, df_tweets, score_handling="unique_tweet_scores", mstream_data_dir="./MStream/data/"):
+def load_mstream_results_for_dataset(dataset_name, score_handling="unique_tweet_scores", mstream_data_dir="./MStream/data/"):
     mstream_scores_file = f"{mstream_data_dir}{dataset_name}_score.txt"
     mstream_labels_file = f"{mstream_data_dir}{dataset_name}_predictions.txt"
     mstream_decomposed_scores_file = f"{mstream_data_dir}{dataset_name}_decomposed.txt"
@@ -85,7 +85,7 @@ def load_mstream_results_for_dataset(dataset_name, df_tweets, score_handling="un
         columns={"text": "tokens"} # backwards-compatibility
     ).sort_values("created_at")
     df_tweets_with_mstream_output = load_mstream_predictions(
-        df_tweets,
+        df_mstream_input.reset_index(),
         mstream_scores_file,
         mstream_labels_file,
         mstream_decomposed_scores_file,
@@ -93,10 +93,9 @@ def load_mstream_results_for_dataset(dataset_name, df_tweets, score_handling="un
         columns_names_file
     )
     score_columns = ['mstream_anomaly_score'] + read_columns(columns_names_file)
-    columns = ["raw_tweet_text"] + score_columns + ["mstream_is_anomaly"]
+    columns = score_columns + ["mstream_is_anomaly"]
     df_mstream_input[columns] = df_tweets_with_mstream_output[
-        ["text"]
-        + score_columns + ["mstream_is_anomaly"]
+        score_columns + ["mstream_is_anomaly"]
     ]
     df_mstream_input["is_retweet"] = df_mstream_input.apply(
         lambda t: df_tweets_with_mstream_output.loc[t.name].retweeted is not None

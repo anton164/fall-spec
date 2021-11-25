@@ -122,7 +122,6 @@ def render_buckets():
         data_dir,
         ".json"
     )
-    df_tweets = load_tweet_dataset(selected_dataset)
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
     dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
 
@@ -156,8 +155,7 @@ def render_buckets():
         bucket_timeseries = top_bucket.timeseries(buckets.total_timesteps)
         st.write(bucket_timeseries)
         df_mstream_input, score_columns = load_mstream_results_for_dataset(
-            dataset_name,
-            df_tweets
+            dataset_name
         )
         st.write(df_mstream_input.timestep.max())
         

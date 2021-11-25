@@ -21,16 +21,10 @@ def render_mstream_results():
         ".json"
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
-    df_tweets_original = load_tweet_dataset(selected_dataset, partial=[
-        "id", "created_at", "merlion_anomaly_total_count", "retweeted", "text"
-    ]).set_index("id")
-    st.write(f"The original dataset has {df_tweets_original.shape[0]:,} tweets")
-
     st.header("Explore MStream Results")
 
     df_mstream_input, score_columns = load_mstream_results_for_dataset(
-        dataset_name,
-        df_tweets_original.reset_index()
+        dataset_name
     )
     st.write(f"df_mstream_input has {df_mstream_input.shape[0]:,} tweets")
 
@@ -40,6 +34,8 @@ def render_mstream_results():
         st.write(df_mstream_input)
 
     if st.checkbox("Show volume plot (to inspect downsampling)"):
+        df_tweets_original = load_tweet_dataset(selected_dataset).set_index("id")
+        st.write(f"The original dataset has {df_tweets_original.shape[0]:,} tweets")
         df_original_count = df_tweets_original.reset_index()[['id', 'created_at']]
         df_mstream_count = df_mstream_input.reset_index()[['id', 'created_at']]
         df_timeseries = df_original_count.groupby(

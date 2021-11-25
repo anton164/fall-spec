@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--merlion_anomaly_threshold', 
     required=False,
-    default=1,
+    default=1.5,
     type=float,
     help='Anomaly threshold for merlion labels'
 )
@@ -340,7 +340,7 @@ if __name__ == "__main__":
         "created_at",
         "is_anomaly",
         "created_at_buckets",
-        "raw_text",
+        "raw_text"
     ]].rename(columns={
         "text": "tokens"
     }).astype({
