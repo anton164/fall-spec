@@ -92,6 +92,7 @@ def read_buckets_generic(file, map_value_to_feature):
                     bucket.hashed_feature_value_counts[val] = val_counter
                     bucket.hashed_feature_value_counts_over_timesteps[timestep][map_value_to_feature(val)] = val_counter - prev_val_count
             total_timesteps = timestep
+        total_timesteps += 1 # because it starts at 0
     print(f"Found {len(value_to_bucket_index)} unique values when reading bucket file {file}")
     return BucketCollection(buckets_by_index, total_timesteps)
 
