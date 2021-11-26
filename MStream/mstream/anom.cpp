@@ -166,8 +166,9 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 SplitString(token_buckets_filename, tmp_file_name, sep);
                 save_token_buckets(tmp_file_name.at(0)+"_"+columns.at(i+1)+".txt", words_to_bucket.at(i));
             }
-            vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
-
+            //words_to_bucket.clear();
+            //vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+            //cout << words_to_bucket.at(0).at(0).size() << "\n";
             cur_t = times[i];
         }
 
