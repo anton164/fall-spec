@@ -275,7 +275,7 @@ if __name__ == "__main__":
                         lemmatize=args.text_lemmatize,
                     )
                     print("Vocabulary size", len(vocabulary))
-                    fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
+                    fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index").sort_index()
                     reduced_fasttext = basic_umap_dr(
                         fasttext_lookup_df, 
                         min_dist=0.1, 

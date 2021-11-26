@@ -31,7 +31,7 @@ bool are_same(double a, double b) {
     return fabs(a - b) < EPSILON;
 }
 
-void save_token_buckets(string token_buckets_filename, vector<vector<double>> &words_to_bucket) {
+void save_token_buckets(string token_buckets_filename, vector<vector<double>> words_to_bucket) {
     //write here
     std::ostringstream stream;
     stream << '[';
@@ -166,9 +166,8 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 SplitString(token_buckets_filename, tmp_file_name, sep);
                 save_token_buckets(tmp_file_name.at(0)+"_"+columns.at(i+1)+".txt", words_to_bucket.at(i));
             }
-            //words_to_bucket.clear();
-            //vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
-            //cout << words_to_bucket.at(0).at(0).size() << "\n";
+            vector<vector<vector<double>>> tmp(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+            words_to_bucket = tmp;
             cur_t = times[i];
         }
 
