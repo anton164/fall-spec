@@ -31,14 +31,14 @@ bool are_same(double a, double b) {
     return fabs(a - b) < EPSILON;
 }
 
-void save_token_buckets(string token_buckets_filename, vector<vector<double>> words_to_bucket) {
+void save_token_buckets(string token_buckets_filename, vector<vector<double>> words_to_bucket, vector<vector<double>> scores_to_bucket) {
     //write here
     std::ostringstream stream;
     stream << '[';
     for (int i = 0; i < words_to_bucket.size(); i++) {
         stream << '[';
         for (int j = 0; j < words_to_bucket.at(i).size(); j++) {
-            stream << words_to_bucket.at(i).at(j);
+            stream << "(" << words_to_bucket.at(i).at(j) << "," << scores_to_bucket.at(i).at(j) << ")";
             if (j + 1 != words_to_bucket.at(i).size()) {
                 stream << ',';
             }
@@ -137,6 +137,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<Categhash> categ_score(dimension2, Categhash(num_rows, num_buckets));
     vector<Categhash> categ_total(dimension2, Categhash(num_rows, num_buckets));
     vector<vector<vector<double>>> words_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+    vector<vector<vector<double>>> scores_to_bucket(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
     
     vector<double> abs_max_numeric = find_max_numeric(dimension1, numeric);
     vector<double> abs_min_numeric = find_min_numeric(dimension1, numeric);
@@ -164,10 +165,12 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 vector<string> tmp_file_name;
                 char sep = '.';
                 SplitString(token_buckets_filename, tmp_file_name, sep);
-                save_token_buckets(tmp_file_name.at(0)+"_"+columns.at(i+1)+".txt", words_to_bucket.at(i));
+                save_token_buckets(tmp_file_name.at(0)+"_"+columns.at(i+1)+".txt", words_to_bucket.at(i), scores_to_bucket.at(i));
             }
-            vector<vector<vector<double>>> tmp(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
-            words_to_bucket = tmp;
+            vector<vector<vector<double>>> tmp_1(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+            vector<vector<vector<double>>> tmp_2(dimension1+dimension2, vector<vector<double>>(num_buckets, vector<double>(0, 0)));
+            words_to_bucket = tmp_1;
+            scores_to_bucket = tmp_2;
             cur_t = times[i];
         }
 
@@ -209,6 +212,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
                                 numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t,
                                 smoothing_factor);
+                scores_to_bucket.at(node_iter)[bucket_index].push_back(t);
             }
             else t = 0;
             decomposed_scores.push_back(t);
@@ -231,6 +235,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
             int bucket_index = categ_score[node_iter].get_bucket(tmp_original_categoric);
             words_to_bucket.at(dimension1+node_iter)[bucket_index].push_back(tmp_original_categoric);
             decomposed_scores.push_back(t);
+            scores_to_bucket.at(dimension1+node_iter)[bucket_index].push_back(t);
             sum = sum+t;
         }
         if (ignore[i] == 0) {
