@@ -139,11 +139,9 @@ def render_mstream_results():
     st.subheader("Top Anomalies")
     present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
     selected_score_column = st.selectbox("By score", options=present_score_columns)
-    n_tweets = st.number_input("Number of tweets to show", value=100)
+    n_tweets = int(st.number_input("Number of tweets to show", value=100))
     df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
-    st.write(
-        df_top_anoms
-    )
+    st.write(df_top_anoms)
 
     st.write(f"Percentage of retweets in top {n_tweets}: {df_top_anoms.is_retweet.sum() / df_top_anoms.shape[0]:%}")
     st.write(f"Percentage of retweets in dataset: {df_mstream_input.is_retweet.sum() / df_mstream_input.shape[0]:%}")
