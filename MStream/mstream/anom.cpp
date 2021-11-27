@@ -17,6 +17,34 @@
 
 double EPSILON = 0.001;
 
+void delete_file(string filename) {
+    try {
+        if (std::filesystem::remove(filename)) {
+            std::cout << "file " << filename << " deleted.\n";
+        }
+        else {
+            std::cout << "file " << filename << " not found.\n";
+        }
+    }
+    catch(const std::filesystem::filesystem_error& err) {
+        std::cout << "filesystem error: " << err.what() << '\n';
+    }
+}
+
+void SplitString(string s, vector<string> &v, char sep){
+	string temp = "";
+	for(int i=0;i<s.length();++i){
+		if(s[i]==sep){
+			v.push_back(temp);
+			temp = "";
+		}
+		else{
+			temp.push_back(s[i]);
+		}		
+	}
+	v.push_back(temp);
+}
+
 double counts_to_anom(double tot, double cur, int cur_t, int smoothing_factor) {
     // tot = total counts, no decay
     // cur = total counts with decay
@@ -32,7 +60,6 @@ bool are_same(double a, double b) {
 }
 
 void save_token_buckets(string token_buckets_filename, vector<vector<double>> words_to_bucket, vector<vector<double>> scores_to_bucket) {
-    //write here
     std::ostringstream stream;
     stream << '[';
     for (int i = 0; i < words_to_bucket.size(); i++) {
@@ -55,18 +82,30 @@ void save_token_buckets(string token_buckets_filename, vector<vector<double>> wo
     outfile << string_words_to_bucket;
 }
 
-void delete_file(string filename) {
-    try {
-        if (std::filesystem::remove(filename)) {
-            std::cout << "file " << filename << " deleted.\n";
-        }
-        else {
-            std::cout << "file " << filename << " not found.\n";
+void save_min_max_per_features(string min_max_filename, vector<double> max_numeric_score, vector<double> min_numeric_score) {
+    vector<string> tmp_file_name;
+    char sep = '_';
+    SplitString(min_max_filename, tmp_file_name, sep);
+    std::ostringstream stream_max;
+    std::ostringstream stream_min;
+    for (int i = 0; i < max_numeric_score.size(); i++) {
+        stream_max << max_numeric_score.at(i);
+        stream_min << min_numeric_score.at(i);
+        if (i + 1 != max_numeric_score.size()) {
+            stream_max << ',';
+            stream_min << ',';
         }
     }
-    catch(const std::filesystem::filesystem_error& err) {
-        std::cout << "filesystem error: " << err.what() << '\n';
-    }
+    std::string string_max = stream_max.str();
+    std::string string_min = stream_min.str();
+    std::ofstream outfile_max;
+    std::ofstream outfile_min;
+    delete_file(tmp_file_name.at(0) + "_max.txt");
+    delete_file(tmp_file_name.at(0) + "_min.txt");
+    outfile_max.open(tmp_file_name.at(0) + "_max.txt", std::ios_base::app);
+    outfile_min.open(tmp_file_name.at(0) + "_min.txt", std::ios_base::app);
+    outfile_max << string_max;
+    outfile_min << string_min;
 }
 
 vector<double> find_max_numeric(int dimension1, vector<vector<double>> &numeric) {
@@ -93,24 +132,10 @@ vector<double> find_min_numeric(int dimension1, vector<vector<double>> &numeric)
     return min_numeric;
 }
 
-void SplitString(string s, vector<string> &v, char sep){
-	string temp = "";
-	for(int i=0;i<s.length();++i){
-		if(s[i]==sep){
-			v.push_back(temp);
-			temp = "";
-		}
-		else{
-			temp.push_back(s[i]);
-		}		
-	}
-	v.push_back(temp);
-}
-
 vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > &categ, vector<int> &times, vector<int> &ignore, int num_rows,
                         int num_buckets, double factor, int smoothing_factor, int dimension1, int dimension2, 
                         vector<string> &scores_decomposed, vector<string> &scores_decomposed_p, string token_buckets_filename,
-                        int abs_min_max, string columns_filename, int min_count) {
+                        int abs_min_max, string columns_filename, int min_count, int hacked_lsh) { 
     int length = times.size(), cur_t = 1;
     // get column names
     ifstream infile(columns_filename);
@@ -145,9 +170,53 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
     vector<double> cur_numeric(0);
     vector<double> max_numeric(0);
     vector<double> min_numeric(0);
+    vector<double> max_numeric_score(0);
+    vector<double> min_numeric_score(0);
+
+    // check if using hacked lsh, if yes, load max and min values
+    if (hacked_lsh == 1) {
+        vector<string> tmp_file_name;
+        char sep = '_';
+        SplitString(token_buckets_filename, tmp_file_name, sep);
+        //load max min values
+        ifstream infile;
+        infile.open(tmp_file_name.at(0) + "_max.txt");
+        string sLine;
+        while (!infile.eof()){
+            infile >> sLine;
+        }
+        infile.close();
+        vector<string> tmp_max_string;
+        sep = ',';
+        SplitString(sLine.data(), tmp_max_string, sep);
+        for (int i = 0; i < tmp_max_string.size(); i++) {
+            max_numeric_score.push_back(atof(tmp_max_string.at(i).c_str()));
+        }
+        //load min values
+        infile.open(tmp_file_name.at(0) + "_min.txt");
+        while (!infile.eof()){
+            infile >> sLine;
+        }
+        infile.close();
+        vector<string> tmp_min_string;
+        SplitString(sLine.data(), tmp_min_string, sep);
+        for (int i = 0; i < tmp_min_string.size(); i++) {
+            min_numeric_score.push_back(atof(tmp_min_string.at(i).c_str()));
+        }
+        //test
+        for (int i = 0; i < min_numeric_score.size(); i++) {
+            cout << min_numeric_score.at(i) << " min value \n";
+        }
+        for (int i = 0; i < max_numeric_score.size(); i++) {
+            cout << max_numeric_score.at(i) << " max value \n";
+        }
+    }
+
     if (dimension1) {
         max_numeric.resize(dimension1, numeric_limits<double>::min());
         min_numeric.resize(dimension1, numeric_limits<double>::max());
+        max_numeric_score.resize(dimension1, numeric_limits<double>::min());
+        min_numeric_score.resize(dimension1, numeric_limits<double>::max());
     }
     vector<long> cur_categ(0);
     for (int i = 0; i < length; i++) {
@@ -202,17 +271,19 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                                     (abs_max_numeric[node_iter] - abs_min_numeric[node_iter]);
                 }
                 
-                int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter]);
+                int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter], hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]);
                 /*if (are_same(tmp_original_numeric, 1.82161)) {
                     cout << bucket_index << endl;
                 }*/
                 words_to_bucket.at(node_iter)[bucket_index].push_back(tmp_original_numeric);
-                numeric_score[node_iter].insert(cur_numeric[node_iter], 1);
-                numeric_total[node_iter].insert(cur_numeric[node_iter], 1);
-                t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter]),
-                                numeric_score[node_iter].get_count(cur_numeric[node_iter]), cur_t,
+                numeric_score[node_iter].insert(cur_numeric[node_iter], 1, hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]);
+                numeric_total[node_iter].insert(cur_numeric[node_iter], 1, hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]);
+                t = counts_to_anom(numeric_total[node_iter].get_count(cur_numeric[node_iter], hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]),
+                                numeric_score[node_iter].get_count(cur_numeric[node_iter], hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]), cur_t,
                                 smoothing_factor);
                 scores_to_bucket.at(node_iter)[bucket_index].push_back(t);
+                min_numeric_score[node_iter] = MIN(min_numeric_score[node_iter], t);
+                max_numeric_score[node_iter] = MAX(max_numeric_score[node_iter], t);
             }
             else t = 0;
             decomposed_scores.push_back(t);
@@ -273,6 +344,9 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         (scores_decomposed)[i] = string_decomposed_scores;
         (scores_decomposed_p)[i] = string_decomposed_p_scores;
     }
-
+    //Save max + min values into files for each numeric value
+    if (hacked_lsh == 0) {
+        save_min_max_per_features(token_buckets_filename, max_numeric_score, min_numeric_score);
+    }
     return anom_score;
 }

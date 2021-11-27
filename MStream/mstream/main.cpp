@@ -168,6 +168,10 @@ int main(int argc, const char *argv[]) {
             .default_value(0)
             .action([](const std::string &value) { return std::stoi(value); })
             .help("Abs min max, should the max and min value should be searched in stream fashion or a priori. Default is 1");
+    program.add_argument("-hackedlsh", "--hackedlsh")
+            .default_value(0)
+            .action([](const std::string &value) { return std::stoi(value); })
+            .help("Hacked LSH, use an ideal LSH, assume max and min are known for each feature");
     program.add_argument("-beta", "--beta")
             .default_value(0)
             .action([](const std::string &value) { return std::stoi(value); })
@@ -197,6 +201,7 @@ int main(int argc, const char *argv[]) {
     string token_buckets_filename = program.get<string>("-tb");
     string columns_filename = program.get<string>("-col");
     int abs_min_max = program.get<int>("-absminmax");
+    int hacked_lsh = program.get<int>("-hackedlsh");
     int rows = program.get<int>("-r");
     int buckets = program.get<int>("-b");
     int beta = program.get<int>("-beta");
@@ -248,7 +253,7 @@ int main(int argc, const char *argv[]) {
     //vector<double> scores_decomposed = new vector<double>(length);
     std::vector<string> scores_decomposed(length);
     std::vector<string> scores_decomposed_p(length);
-    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename, abs_min_max, columns_filename, min_count);
+    vector<double> *scores2 = mstream(numeric, categ, times, ignore, rows, buckets, alpha, beta, dimension1, dimension2, scores_decomposed, scores_decomposed_p, token_buckets_filename, abs_min_max, columns_filename, min_count, hacked_lsh);
     cout << "@ " << ((double) (clock() - start_time2)) / CLOCKS_PER_SEC << endl;
 
     FILE *output_file = fopen(output_filename.c_str(), "w");
