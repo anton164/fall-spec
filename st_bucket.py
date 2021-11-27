@@ -1,6 +1,6 @@
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
-from utils.anomaly_bucket import BucketCollection, get_timeseries_from_bucket, load_all_buckets_for_dataset
+from utils.anomaly_bucket import BucketCollection, get_combined_timeseries_for_buckets, get_timeseries_from_bucket, load_all_buckets_for_dataset
 from utils.mstream import load_mstream_results_for_dataset
 from create_embeddings import load_fasttext
 from utils.st_utils import st_select_file
@@ -142,6 +142,9 @@ def render_buckets():
     st.write(f"Timesteps: {buckets.total_timesteps}")
     st.write(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
     st.write(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
+
+    if st.checkbox("Show combined timeseries (might be slow)"):
+        st.dataframe(get_combined_timeseries_for_buckets(buckets))
     
     if selected_bucket_feature == "text":
         render_text_buckets(buckets, vocabulary)

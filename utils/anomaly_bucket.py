@@ -44,11 +44,12 @@ def get_timeseries_from_bucket(bucket, n_timesteps):
         for val, scores in bucket.values_at_timestep(timestep).items():
             data.append({
                 "timestep": timestep,
-                "value": val,
+                "value": str(val),
                 "count": scores["count"],
                 "score": scores["score"],
+                "bucket_index": bucket.bucket_index
             })
-    print(data)
+    
     return pd.DataFrame(
         data
     ).fillna(0).set_index("timestep")
@@ -91,6 +92,16 @@ class BucketCollection:
                         "score": scores["score"],
                     }) 
         return buckets_at_timestep, bucket_values_at_timestep
+
+
+def get_combined_timeseries_for_buckets(bucket_collection):
+    dfs = []
+    for bucket in bucket_collection.sorted_by_frequency:
+        if (bucket.hash_frequency() > 0):
+            df = get_timeseries_from_bucket(bucket, bucket_collection.total_timesteps)
+            dfs.append(df)
+        
+    return pd.concat(dfs).sort_index()
 
 def umap_key(val):
     round_decimals = 5
