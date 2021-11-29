@@ -113,12 +113,10 @@ vector<double> find_max_numeric(int dimension1, vector<vector<double>> &numeric)
     for (int i = 0; i < numeric.size(); i++) {
         for (int j = 0; j < numeric.at(i).size(); j++) {
             if (max_numeric.at(j) < numeric.at(i).at(j)) {
-                max_numeric.at(j) = log10(1 + numeric.at(i).at(j));
-                //max_numeric.at(j) = numeric.at(i).at(j);
+                max_numeric.at(j) = numeric.at(i).at(j);
             }
         }   
     }
-    cout << "man_1" << "\n";
     return max_numeric;
 }
 
@@ -127,12 +125,10 @@ vector<double> find_min_numeric(int dimension1, vector<vector<double>> &numeric)
     for (int i = 0; i < numeric.size(); i++) {
         for (int j = 0; j < numeric.at(i).size(); j++) {
             if (min_numeric.at(j) > numeric.at(i).at(j)) {
-                min_numeric.at(j) = log10(1 + numeric.at(i).at(j));
-                //min_numeric.at(j) = numeric.at(i).at(j);
+                min_numeric.at(j) =  numeric.at(i).at(j);
             }
         }   
     }
-    cout << "man_2" << "\n";
     return min_numeric;
 }
 
@@ -270,12 +266,9 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                                         (max_numeric[node_iter] - min_numeric[node_iter]);
                     }
                 } else {
-                    /*cout << abs_max_numeric.at(node_iter) << "\n_+_\n";
-                    cout << abs_min_numeric[node_iter] << "\n_-_\n";
-                    cout << cur_numeric[node_iter] << "\n-----\n";*/
                     if (abs_max_numeric[node_iter] == abs_min_numeric[node_iter]) cur_numeric[node_iter] = 0;
-                    else cur_numeric[node_iter] = (cur_numeric[node_iter] - abs_min_numeric[node_iter]) /
-                                    (abs_max_numeric[node_iter] - abs_min_numeric[node_iter]);
+                    else cur_numeric[node_iter] = (cur_numeric[node_iter] - log10(1+abs_min_numeric[node_iter])) /
+                                    (log10(1+abs_max_numeric[node_iter]) - abs_min_numeric[node_iter]);
                 }
                 
                 int bucket_index = numeric_score[node_iter].hash(cur_numeric[node_iter], hacked_lsh, max_numeric_score[node_iter], min_numeric_score[node_iter]);
@@ -333,7 +326,6 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         } else {
             stream_2 << cur_score/sum << ',';
         }
-        
         for (int i = 0; i < decomposed_scores.size(); i++) {
             stream << std::to_string(log(1 + decomposed_scores[i]));
             if (sum == 0) {
