@@ -1,6 +1,6 @@
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
-from utils.anomaly_bucket import BucketCollection, load_all_buckets_for_dataset
+from utils.anomaly_bucket import BucketCollection, get_combined_timeseries_for_buckets, get_timeseries_from_bucket, load_all_buckets_for_dataset
 from utils.mstream import load_mstream_results_for_dataset
 from create_embeddings import load_fasttext
 from utils.st_utils import st_select_file
@@ -142,6 +142,9 @@ def render_buckets():
     st.write(f"Timesteps: {buckets.total_timesteps}")
     st.write(f"Loaded {n_buckets} buckets ({utilized_buckets/n_buckets:.2%} utilized)")
     st.write(f"{n_unique_values} unique values hashed into {utilized_buckets} separate buckets")
+
+    if st.checkbox("Show combined timeseries (might be slow)"):
+        st.dataframe(get_combined_timeseries_for_buckets(buckets))
     
     if selected_bucket_feature == "text":
         render_text_buckets(buckets, vocabulary)
@@ -152,28 +155,25 @@ def render_buckets():
         )
         top_bucket = buckets.by_index[selected_bucket]
         st.write(f"Bucket hash frequency: {top_bucket.hash_frequency()}")
-        bucket_timeseries = top_bucket.timeseries(buckets.total_timesteps)
+        bucket_timeseries = get_timeseries_from_bucket(top_bucket, buckets.total_timesteps)
         st.write(bucket_timeseries)
         df_mstream_input, score_columns = load_mstream_results_for_dataset(
             dataset_name
         )
-        st.write(df_mstream_input.timestep.max())
         
         st.subheader("Top Anomalies")
         present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
         selected_score_column = st.selectbox("By score", options=present_score_columns)
-        n_tweets = st.number_input("Number of tweets to show", value=100)
+        n_tweets = int(st.number_input("Number of tweets to show", value=100))
         df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
-        st.write(
-            df_top_anoms
-        )
+        st.write(df_top_anoms)
         selected_timestep = st.number_input("Select a timestep to inspect buckets", value=0)
 
-        active_buckets = buckets.get_buckets_by_timestep(selected_timestep)
+        active_buckets, active_bucket_values = buckets.get_buckets_by_timestep(selected_timestep)
         st.write(f"**Active buckets:** {len(active_buckets)}")
+        df_active_bucket_values = pd.DataFrame(active_bucket_values)
+        st.dataframe(df_active_bucket_values)
         
-        for bucket in active_buckets:
-            st.write(bucket.values_at_timestep(selected_timestep))
 
 if __name__ == "__main__":
     render_buckets()

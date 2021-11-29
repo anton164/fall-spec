@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict
+from typing import Any, Dict, Literal, Tuple, Union
 from collections import defaultdict
 import sys
 import pandas as pd
@@ -8,18 +8,25 @@ import os
 import re
 class AnomalyBucket:
     bucket_index: int
-    # mapping for (timestep -> (underlying value ->  count))
-    hashed_feature_value_counts_over_timesteps: Dict[int, Dict[Any, int]] 
-    # mapping from feature value representation to underlying value
+    # mapping for (timestep -> (underlying twitter value ->  {"count", "score"}))
+    hashed_value_scores_by_timesteps: Dict[
+        int, 
+        Dict[
+            Any, 
+            Dict[Union[Literal["score"], Literal["count"]], float]
+        ]
+    ] 
+    # mapping from MSTREAM feature value representation to underlying twitter value
     hashed_feature_value_lookup: Dict[float, Any]
+    # mapping from MSTREAM feature value to total count in bucket 
     hashed_feature_value_counts: Dict[float, int]
 
     def __init__(self, bucket_index) -> None:
         self.bucket_index = bucket_index
         self.hashed_feature_values = {}
         self.hashed_feature_value_counts = defaultdict(lambda: 0)
-        self.hashed_feature_value_counts_over_timesteps = defaultdict(
-            lambda: defaultdict(lambda: 0)
+        self.hashed_value_scores_by_timesteps = defaultdict(
+            lambda: {}
         )
 
     def hash_frequency(self):
@@ -29,15 +36,23 @@ class AnomalyBucket:
         return len(self.hashed_feature_values)
 
     def values_at_timestep(self, timestep):
-        return self.hashed_feature_value_counts_over_timesteps[timestep]
-    
-    def timeseries(self, n_timesteps):
-        data = []
-        for timestep in range(n_timesteps):
-            data.append(self.values_at_timestep(timestep))
-        
-        return pd.DataFrame(data).fillna(0)
+        return self.hashed_value_scores_by_timesteps[timestep]
 
+def get_timeseries_from_bucket(bucket, n_timesteps):
+    data = []
+    for timestep in range(n_timesteps):
+        for val, scores in bucket.values_at_timestep(timestep).items():
+            data.append({
+                "timestep": timestep,
+                "value": str(val),
+                "count": scores["count"],
+                "score": scores["score"],
+                "bucket_index": bucket.bucket_index
+            })
+    
+    return pd.DataFrame(
+        data
+    ).fillna(0).set_index("timestep")
 class BucketCollection:
     def __init__(self, buckets_by_index: Dict[int, AnomalyBucket], total_timesteps) -> None:
         self.by_index = buckets_by_index
@@ -64,11 +79,29 @@ class BucketCollection:
 
     def get_buckets_by_timestep(self, timestep):
         buckets_at_timestep = []
+        bucket_values_at_timestep = []
         for bucket in self.sorted_by_frequency:
-            n_values = len(bucket.hashed_feature_value_counts_over_timesteps[timestep])
+            n_values = len(bucket.values_at_timestep(timestep))
             if (n_values > 0):
                 buckets_at_timestep.append(bucket)
-        return buckets_at_timestep
+                for val, scores in bucket.values_at_timestep(timestep).items():
+                    bucket_values_at_timestep.append({
+                        "bucket_index": bucket.bucket_index,
+                        "value": str(val),
+                        "count": scores["count"],
+                        "score": scores["score"],
+                    }) 
+        return buckets_at_timestep, bucket_values_at_timestep
+
+
+def get_combined_timeseries_for_buckets(bucket_collection):
+    dfs = []
+    for bucket in bucket_collection.sorted_by_frequency:
+        if (bucket.hash_frequency() > 0):
+            df = get_timeseries_from_bucket(bucket, bucket_collection.total_timesteps)
+            dfs.append(df)
+        
+    return pd.concat(dfs).sort_index()
 
 def umap_key(val):
     round_decimals = 5
@@ -92,18 +125,32 @@ def read_buckets_generic(file, map_value_to_feature):
                     buckets_by_index[bucket_index] = AnomalyBucket(bucket_index)
                 bucket = buckets_by_index[bucket_index]
                 val_counter = defaultdict(lambda: 0)
-                for val in content:
+                score_by_val: Dict[Any, float] = {}
+                # Support for reading tuples
+                for bucket_val in content:
+                    if (type(bucket_val) == tuple):
+                        val, score = bucket_val
+                    else:
+                        val = bucket_val
+                        score = 0 # assumes score is 0 if not present 
+                    score_by_val[val] = score
                     if val in value_to_bucket_index and bucket_index != value_to_bucket_index[val]:
                         raise Exception(f"Value {val} hashed to multiple buckets: {value_to_bucket_index[val]} and {bucket_index} at timestep {timestep}")
                     value_to_bucket_index[val] = bucket_index
                     val_counter[val] += 1
+
+                # in this timestep, for each value that was read in this bucket
+                # save the count (number of times value was seen) and the latest score
                 for val, val_counter in val_counter.items():
                     bucket.hashed_feature_values[val] = map_value_to_feature(val)
                     prev_val_count = bucket.hashed_feature_value_counts[val]
                     bucket.hashed_feature_value_counts[val] = val_counter
                     val_count_at_timestep = val_counter - prev_val_count
                     if val_count_at_timestep > 0:
-                        bucket.hashed_feature_value_counts_over_timesteps[timestep][map_value_to_feature(val)] = val_count_at_timestep
+                        bucket.hashed_value_scores_by_timesteps[timestep][map_value_to_feature(val)] = {
+                            "count": val_count_at_timestep,
+                            "score": score_by_val[val]
+                        }
             total_timesteps = timestep
         total_timesteps += 1 # because it starts at 0
     print(f"Found {len(value_to_bucket_index)} unique values when reading bucket file {file}")
@@ -169,4 +216,4 @@ if __name__ == "__main__":
             print()
         top_bucket = buckets.sorted_by_collisions[0]
         print(f"Bucket timeseries for bucket {top_bucket.bucket_index}:")
-        print(top_bucket.timeseries(100))
+        print(get_timeseries_from_bucket(top_bucket, 100))
