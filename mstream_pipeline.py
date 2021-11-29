@@ -70,6 +70,13 @@ parser.add_argument(
     default=1,
     help='Abs min max, should the max and min value should be searched in stream fashion or a priori. Default is 1'
 )
+parser.add_argument(
+    '--hackedlsh', 
+    type=int,
+    required=False,
+    default=0,
+    help='Hacked LSH, use an ideal LSH, assume max and min are known for each feature'
+)
 args = parser.parse_args()
 
 print("Args", args)
@@ -85,6 +92,7 @@ with Timer("prepare mstream data"):
         f"--text_synthetic {args.text_synthetic}",
         f"--text_exclude_retweets {args.text_exclude_retweets}",
         f"--text_lemmatize {args.text_lemmatize}",
+        f"--noun_verb {args.noun_verb}",
         f"--hashtag_encoding {args.hashtag_encoding}",
         f"--retweet_encoding {args.retweet_encoding}",
         f"--mention_encoding {args.mention_encoding}",
@@ -123,6 +131,7 @@ with Timer("Run & compile MSTREAM"):
         f"-b {args.mstream_buckets}",
         f"-beta {args.mstream_beta}",
         f"-absminmax {args.abs_min_max}",
+        f"-hackedlsh {args.hackedlsh}",
         f"-tb 'data/{output_name}_token_buckets.txt'",
         f"-col 'data/{output_name}_columns.txt'",
         f"-mincount {args.mstream_mincount}",

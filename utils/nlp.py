@@ -29,6 +29,14 @@ def lemmatizing(words):
     lemmatizer = WordNetLemmatizer()
     return [lemmatizer.lemmatize(word) for word in words]
 
+def keep_noun_verb(words):
+    nouns = {'NN', 'NNS', 'NNP', 'NNPS'}
+    verbs = {'VB', 'VBG', 'VBD', 'VBN', 'VBP', 'VBZ'}
+    pos = set([t[1] for t in nltk.pos_tag(words)])
+    if len(nouns & pos) > 0 and len(verbs & pos) > 0 and len(words) > 3:
+        return words
+    return []
+
 def lower_text(words):
     return [word.lower() for word in words]
 
@@ -56,12 +64,15 @@ def preprocess_text(
     lemmatize=False,
     stem=False,
     stop_words=True,
-    ensure_unique_tokens=True
+    ensure_unique_tokens=True,
+    noun_verb=False
 ):
     """ Helper method for parametrizing text preprocessing """
     if clean:
         text = cleaner(text)
     tokens = word_tokenize(text)
+    if noun_verb:
+        tokens = keep_noun_verb(tokens)
     if lower:
         tokens = lower_text(tokens)
     if lemmatize:

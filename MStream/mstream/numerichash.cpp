@@ -13,24 +13,37 @@ Numerichash::Numerichash(int r, int b) {
     this->clear();
 }
 
-int Numerichash::hash(double cur_node) {
+int Numerichash::hash(double cur_node, int hacked_lsh, double max, double min) {
     int bucket;
+    //TO DO - Check if we want to use the flag for hacked lsh and modify hash accordingly
+    /*if (hacked_lsh == 1) {
+        bucket = cur_node/((max-min)/num_buckets);
+        cout << "bucket reeturned for " << cur_node << "\n";
+        cout << bucket << "\n";
+    } else {
+        cur_node = cur_node * (num_buckets - 1);
+        bucket = floor(cur_node);
+        if(bucket < 0)
+            bucket = (bucket%num_buckets + num_buckets)%num_buckets;
+    }*/
     cur_node = cur_node * (num_buckets - 1);
     bucket = floor(cur_node);
     if(bucket < 0)
         bucket = (bucket%num_buckets + num_buckets)%num_buckets;
+    /*cout << cur_node << "\n";
+    cout << bucket << "\n";*/
     return bucket;
 }
 
-void Numerichash::insert(double cur_node, double weight) {
+void Numerichash::insert(double cur_node, double weight, int hacked_lsh, double max, double min) {
     int bucket;
-    bucket = hash(cur_node);
+    bucket = hash(cur_node, hacked_lsh, max, min);
     count[0][bucket] += weight;
 }
 
-double Numerichash::get_count(double cur_node) {
+double Numerichash::get_count(double cur_node, int hacked_lsh, double max, double min) {
     int bucket;
-    bucket = hash(cur_node);
+    bucket = hash(cur_node, hacked_lsh, max, min);
     return count[0][bucket];
 }
 

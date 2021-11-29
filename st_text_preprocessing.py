@@ -22,7 +22,7 @@ def convert_tokens_to_numerical_feature(
         False,
         input_col=text_col
     )
-    fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index")
+    fasttext_lookup_df = pd.DataFrame.from_dict(fasttext_lookup, orient="index").sort_index()
     reduced_fasttext = basic_umap_dr(
         fasttext_lookup_df, 
         min_dist=umap_min_dist, 
