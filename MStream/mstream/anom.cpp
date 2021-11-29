@@ -113,10 +113,12 @@ vector<double> find_max_numeric(int dimension1, vector<vector<double>> &numeric)
     for (int i = 0; i < numeric.size(); i++) {
         for (int j = 0; j < numeric.at(i).size(); j++) {
             if (max_numeric.at(j) < numeric.at(i).at(j)) {
-                max_numeric.at(j) = log10(2 + numeric.at(i).at(j));
+                max_numeric.at(j) = log10(1 + numeric.at(i).at(j));
+                //max_numeric.at(j) = numeric.at(i).at(j);
             }
         }   
     }
+    cout << "man_1" << "\n";
     return max_numeric;
 }
 
@@ -125,15 +127,12 @@ vector<double> find_min_numeric(int dimension1, vector<vector<double>> &numeric)
     for (int i = 0; i < numeric.size(); i++) {
         for (int j = 0; j < numeric.at(i).size(); j++) {
             if (min_numeric.at(j) > numeric.at(i).at(j)) {
-                cout << numeric.at(i).at(j) << "min value \n";
-                min_numeric.at(j) = log10(2 + numeric.at(i).at(j));
-                cout << min_numeric.at(j) << "-----\n";
+                min_numeric.at(j) = log10(1 + numeric.at(i).at(j));
+                //min_numeric.at(j) = numeric.at(i).at(j);
             }
         }   
     }
-    for (int i = 0; i < min_numeric.size(); i++) {
-        cout << min_numeric.at(i) << " min value \n";
-    }
+    cout << "man_2" << "\n";
     return min_numeric;
 }
 
@@ -257,7 +256,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         for (int node_iter = 0; node_iter < dimension1; node_iter++) {
             if (cur_numeric[node_iter] != 0) {
                 double tmp_original_numeric = cur_numeric[node_iter];
-                cur_numeric[node_iter] = log10(2 + cur_numeric[node_iter]);
+                cur_numeric[node_iter] = log10(1 + cur_numeric[node_iter]);
                 if (abs_min_max != 1) {
                     if (!i) {
                         max_numeric[node_iter] = cur_numeric[node_iter];
@@ -328,7 +327,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         sum = sum + cur_score;
         std::ostringstream stream;
         std::ostringstream stream_2;
-        stream << log(2 + cur_score) << ',';
+        stream << log(1 + cur_score) << ',';
         if (cur_score == 0) {
             stream_2 << cur_score << ',';
         } else {
@@ -336,7 +335,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         }
         
         for (int i = 0; i < decomposed_scores.size(); i++) {
-            stream << std::to_string(log(2 + decomposed_scores[i]));
+            stream << std::to_string(log(1 + decomposed_scores[i]));
             if (sum == 0) {
                 stream_2 << std::to_string(0);
             } else {
@@ -349,7 +348,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
         }
         std::string string_decomposed_scores = stream.str();
         std::string string_decomposed_p_scores = stream_2.str();
-        (*anom_score)[i] = log(2 + sum);
+        (*anom_score)[i] = log(1 + sum);
         (scores_decomposed)[i] = string_decomposed_scores;
         (scores_decomposed_p)[i] = string_decomposed_p_scores;
     }
