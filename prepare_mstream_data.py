@@ -188,6 +188,7 @@ if __name__ == "__main__":
     # Load labels from merlion
     anomaly_threshold = args.merlion_anomaly_threshold
     df["is_anomaly"] = df["merlion_anomaly_total_count"].apply(lambda x: x > anomaly_threshold)
+    df["prophet_anomaly_score"] = df["merlion_anomaly_total_count"]
     df["is_anomaly_hashtag1"] = df["merlion_anomaly_top1_hashtag_count"].apply(lambda x: x > anomaly_threshold)
     df["is_anomaly_hashtag2"] = df["merlion_anomaly_top2_hashtag_count"].apply(lambda x: x > anomaly_threshold)
     df["is_anomaly_hashtag3"] = df["merlion_anomaly_top3_hashtag_count"].apply(lambda x: x > anomaly_threshold)
@@ -350,6 +351,7 @@ if __name__ == "__main__":
         "retweeted",
         "created_at",
         "is_anomaly",
+        "prophet_anomaly_score",
         "created_at_bucket",
         "raw_text"
     ]].rename(columns={

@@ -1,8 +1,9 @@
+from math import log
+from st_bucket import load_dataset_vocabulary, st_read_buckets
 from utils.mstream import SCORE_HANDLING_OPTIONS, load_mstream_predictions, load_mstream_results_for_dataset
 from utils.st_utils import st_select_file
 from utils.dataset import count_array_column, load_tweet_dataset, read_columns
 import streamlit as st
-from streamlit_plotly_events import plotly_events
 import os
 import plotly.express as px
 import plotly.graph_objects as go
@@ -122,33 +123,82 @@ def render_mstream_results():
     )
     for i, val in enumerate(df_mstream_input.columns):
         if val in score_columns and val not in ['record_score']:
-            #hovertext = df_mstream_input[val.split('_')[0]].apply(lambda x: ','.join(map(str, x))).tolist()
             fig.add_trace(
                 go.Scatter(
                     x=df_mstream_input.created_at,
                     y=df_mstream_input[val],
                     mode='lines',
                     name=" ".join(val.split('_')),
-                    opacity=0.5,
-             #       hovertext=hovertext
+                    opacity=0.5
                 )
             )
-    selected_points = plotly_events(fig)
     st.write(fig)
 
-    st.subheader("Top Anomalies")
-    present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
-    selected_score_column = st.selectbox("By score", options=present_score_columns)
-    n_tweets = int(st.number_input("Number of tweets to show", value=100))
-    df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
-    st.write(df_top_anoms)
+    
 
-    st.write(f"Percentage of retweets in top {n_tweets}: {df_top_anoms.is_retweet.sum() / df_top_anoms.shape[0]:%}")
-    st.write(f"Percentage of retweets in dataset: {df_mstream_input.is_retweet.sum() / df_mstream_input.shape[0]:%}")
+    st.header("Top Anomalies by score")
+    anomaly_type = st.selectbox("Type of anomaly", options=["Timestep", "Unique tweets"])
+    if anomaly_type == "Unique tweets":
+        present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
+        selected_score_column = st.selectbox("By score", options=present_score_columns)
+        n_tweets = int(st.number_input("Number of tweets to show", value=100))
+        df_top_anoms = df_mstream_input.nlargest(n_tweets, selected_score_column)
+        st.write(df_top_anoms)
+        st.write(f"Percentage of retweets in top {n_tweets}: {df_top_anoms.is_retweet.sum() / df_top_anoms.shape[0]:%}")
+        st.write(f"Percentage of retweets in dataset: {df_mstream_input.is_retweet.sum() / df_mstream_input.shape[0]:%}")
 
-    st.write(f"Average token length in top {n_tweets}: {df_top_anoms.token_length.mean()}")
-    if "token_length" in df_mstream_input:
-        st.write(f"Average token length in dataset: {df_mstream_input.token_length.mean()}")
+        st.write(f"Average token length in top {n_tweets}: {df_top_anoms.token_length.mean()}")
+        if "token_length" in df_mstream_input:
+            st.write(f"Average token length in dataset: {df_mstream_input.token_length.mean()}")
+    else:
+        present_score_columns = [col for col in score_columns if col in df_mstream_input.columns]
+        selected_score_column = st.selectbox("By score", options=present_score_columns)
+        df_timestep_anomalies = df_mstream_input[[
+            "created_at_bucket",
+            "timestep"
+        ] + present_score_columns].groupby([
+            "created_at_bucket",
+            "timestep"
+        ]).max().reset_index().set_index("timestep")
+        n_top_anoms = int(st.number_input("Number of timesteps to show", value=10))
+        df_top_anoms = df_timestep_anomalies.nlargest(n_top_anoms, selected_score_column)
+
+        vocabulary = load_dataset_vocabulary(dataset_name)
+        buckets_by_feature = st_read_buckets(dataset_name, vocabulary)
+        
+        bucket_features = list(buckets_by_feature.keys())
+        active_feature = [feature for feature in bucket_features if feature in selected_score_column]
+        st.subheader("Inspect buckets at top timesteps by anomaly score")
+        if len(active_feature) > 0:
+            selected_bucket_feature = active_feature[0]
+            st.write(f"**Inspecting buckets for {selected_bucket_feature}**")
+        else:
+            selected_bucket_feature = st.selectbox(
+                "Select feature to inspect",
+                options=bucket_features
+            )
+        for count, (timestep, row) in enumerate(df_top_anoms.iterrows()):
+            st.subheader(f"{count}) Timestep {timestep}, {row.created_at_bucket}")
+            st.write("\n".join(
+                [f"**{selected_score_column}**: {row[selected_score_column]}"]
+            ))
+            buckets = buckets_by_feature[selected_bucket_feature]
+            active_buckets, active_bucket_values = buckets.get_buckets_by_timestep(timestep)
+            st.write(f"**Active {selected_bucket_feature} buckets at timestep:** {len(active_buckets)}")
+            df_active_bucket_values = pd.DataFrame(active_bucket_values)
+            if (len(df_active_bucket_values) > 0):
+                df_active_bucket_values["log_score"] = df_active_bucket_values.apply(
+                    lambda x: log(x.score) if x.score > 0 else 0,
+                    axis=1
+                )
+                st.dataframe(df_active_bucket_values)
+                st.write(f"**Log score sum:** {df_active_bucket_values['log_score'].sum()}")
+
+            st.write(f"**Other scores at timestep {timestep}**:")
+            st.write("  \n".join(
+                [f"**{score_col}**: {row[score_col]}" for score_col in present_score_columns if score_col != selected_score_column] 
+            ))
+
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+from math import log
 from gensim.models.keyedvectors import KeyedVectors
 import streamlit as st
 from utils.anomaly_bucket import BucketCollection, get_combined_timeseries_for_buckets, get_timeseries_from_bucket, load_all_buckets_for_dataset
@@ -19,6 +20,13 @@ def st_read_buckets(dataset_name, vocabulary):
         dataset_name, 
         vocabulary
     )
+
+def load_dataset_vocabulary(dataset_name):
+    dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
+
+    with open(dataset_vocabulary, "r") as f:
+        vocabulary = json.load(f)
+    return vocabulary
 
 @st.cache(allow_output_mutation=True)
 def st_load_fasttext():
@@ -123,10 +131,7 @@ def render_buckets():
         ".json"
     )
     dataset_name = selected_dataset.replace(".json", "").replace(data_dir + "/", "")
-    dataset_vocabulary = f"./MStream/data/{dataset_name}_vocabulary.json"
-
-    with open(dataset_vocabulary, "r") as f:
-        vocabulary = json.load(f)
+    vocabulary = load_dataset_vocabulary(dataset_name)
     
     buckets_by_feature = st_read_buckets(dataset_name, vocabulary)
     selected_bucket_feature = st.selectbox(

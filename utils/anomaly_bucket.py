@@ -133,6 +133,10 @@ def read_buckets_generic(file, map_value_to_feature):
                     else:
                         val = bucket_val
                         score = 0 # assumes score is 0 if not present 
+                    
+                    # Ignore unks
+                    if (val == 0.0): 
+                        continue
                     score_by_val[val] = score
                     if val in value_to_bucket_index and bucket_index != value_to_bucket_index[val]:
                         raise Exception(f"Value {val} hashed to multiple buckets: {value_to_bucket_index[val]} and {bucket_index} at timestep {timestep}")
@@ -143,9 +147,8 @@ def read_buckets_generic(file, map_value_to_feature):
                 # save the count (number of times value was seen) and the latest score
                 for val, val_counter in val_counter.items():
                     bucket.hashed_feature_values[val] = map_value_to_feature(val)
-                    prev_val_count = bucket.hashed_feature_value_counts[val]
                     bucket.hashed_feature_value_counts[val] = val_counter
-                    val_count_at_timestep = val_counter - prev_val_count
+                    val_count_at_timestep = val_counter
                     if val_count_at_timestep > 0:
                         bucket.hashed_value_scores_by_timesteps[timestep][map_value_to_feature(val)] = {
                             "count": val_count_at_timestep,

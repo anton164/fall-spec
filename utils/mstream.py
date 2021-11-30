@@ -98,10 +98,9 @@ def load_mstream_results_for_dataset(dataset_name, score_handling=SCORE_HANDLING
         mstream_decomposed_p_scores_file,
         columns_names_file
     )
-    print(df_mstream_input.columns)
-    score_columns = ['mstream_anomaly_score'] + read_columns(columns_names_file)
+    score_columns = ['mstream_anomaly_score', 'prophet_anomaly_score'] + read_columns(columns_names_file)
     df_mstream_input["is_retweet"] = df_mstream_input.retweeted.apply(
-        lambda val: val is not None
+        lambda val: val != "0"
     )
     if "tokens" in df_mstream_input:
         df_mstream_input["token_length"] = df_mstream_input.tokens.apply(
