@@ -32,7 +32,9 @@ def render_mstream_results():
         dataset_name,
         score_handling
     )
+    vocabulary = load_dataset_vocabulary(dataset_name)
     st.write(f"df_mstream_input has {df_mstream_input.shape[0]:,} tweets")
+    st.write(f"vocabulary has {len(vocabulary):,} unique words")
 
     fig = go.Figure()
 
@@ -163,7 +165,6 @@ def render_mstream_results():
         n_top_anoms = int(st.number_input("Number of timesteps to show", value=10))
         df_top_anoms = df_timestep_anomalies.nlargest(n_top_anoms, selected_score_column)
 
-        vocabulary = load_dataset_vocabulary(dataset_name)
         buckets_by_feature = st_read_buckets(dataset_name, vocabulary)
         
         bucket_features = list(buckets_by_feature.keys())
@@ -192,7 +193,10 @@ def render_mstream_results():
                     axis=1
                 )
                 st.dataframe(df_active_bucket_values)
-                st.write(f"**Log score sum:** {df_active_bucket_values['log_score'].sum()}")
+                log_score_sum = float(df_active_bucket_values[
+                    ["log_score", "bucket_index"]
+                ].groupby("bucket_index").max().sum())
+                st.write(f"**Log score grouped by bucket sum:** {log_score_sum}")
 
             st.write(f"**Other scores at timestep {timestep}**:")
             st.write("  \n".join(
