@@ -193,10 +193,6 @@ def render_mstream_results():
                     axis=1
                 )
                 st.dataframe(df_active_buckets)
-                log_score_sum = float(df_active_buckets[
-                    ["log_score", "bucket_index"]
-                ].groupby("bucket_index").max().sum())
-                st.write(f"**Log score grouped by bucket sum:** {log_score_sum}")
 
             st.write(f"**Other scores at timestep {timestep}**:")
             st.write("  \n".join(

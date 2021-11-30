@@ -87,8 +87,8 @@ class BucketCollection:
                     if bucket.bucket_index in buckets_at_timestep:
                         # update
                         buckets_at_timestep[bucket.bucket_index]["values"].append(str(val))
-                        buckets_at_timestep[bucket.bucket_index]["score"] = max(
-                            buckets_at_timestep[bucket.bucket_index]["score"],
+                        buckets_at_timestep[bucket.bucket_index]["score"] = (
+                            buckets_at_timestep[bucket.bucket_index]["score"] +
                             scores["score"]
                         )
                         buckets_at_timestep[bucket.bucket_index]["values_count"] = len(
