@@ -185,15 +185,15 @@ def render_mstream_results():
             ))
             buckets = buckets_by_feature[selected_bucket_feature]
             active_buckets, active_bucket_values = buckets.get_buckets_by_timestep(timestep)
-            st.write(f"**Active {selected_bucket_feature} buckets at timestep:** {len(active_buckets)}")
-            df_active_bucket_values = pd.DataFrame(active_bucket_values)
-            if (len(df_active_bucket_values) > 0):
-                df_active_bucket_values["log_score"] = df_active_bucket_values.apply(
+            st.write(f"**Active {selected_bucket_feature} buckets in timestep:** {len(active_buckets)}")
+            df_active_buckets = pd.DataFrame(active_buckets)
+            if (len(df_active_buckets) > 0):
+                df_active_buckets["log_score"] = df_active_buckets.apply(
                     lambda x: log(x.score) if x.score > 0 else 0,
                     axis=1
                 )
-                st.dataframe(df_active_bucket_values)
-                log_score_sum = float(df_active_bucket_values[
+                st.dataframe(df_active_buckets)
+                log_score_sum = float(df_active_buckets[
                     ["log_score", "bucket_index"]
                 ].groupby("bucket_index").max().sum())
                 st.write(f"**Log score grouped by bucket sum:** {log_score_sum}")

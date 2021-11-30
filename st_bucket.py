@@ -176,8 +176,10 @@ def render_buckets():
 
         active_buckets, active_bucket_values = buckets.get_buckets_by_timestep(selected_timestep)
         st.write(f"**Active buckets:** {len(active_buckets)}")
-        df_active_bucket_values = pd.DataFrame(active_bucket_values)
-        st.dataframe(df_active_bucket_values)
+        st.write("**Buckets:**")
+        st.dataframe(pd.DataFrame(active_buckets))
+        st.write("**Bucket values:**")
+        st.dataframe(pd.DataFrame(active_bucket_values))
         
 
 if __name__ == "__main__":

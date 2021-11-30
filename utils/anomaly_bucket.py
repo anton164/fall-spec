@@ -78,20 +78,37 @@ class BucketCollection:
         return sum([bucket.hashed_value_count() for bucket in self.by_index.values()])
 
     def get_buckets_by_timestep(self, timestep):
-        buckets_at_timestep = []
+        buckets_at_timestep = {}
         bucket_values_at_timestep = []
         for bucket in self.sorted_by_frequency:
             n_values = len(bucket.values_at_timestep(timestep))
             if (n_values > 0):
-                buckets_at_timestep.append(bucket)
                 for val, scores in bucket.values_at_timestep(timestep).items():
+                    if bucket.bucket_index in buckets_at_timestep:
+                        # update
+                        buckets_at_timestep[bucket.bucket_index]["values"].append(str(val))
+                        buckets_at_timestep[bucket.bucket_index]["score"] = max(
+                            buckets_at_timestep[bucket.bucket_index]["score"],
+                            scores["score"]
+                        )
+                        buckets_at_timestep[bucket.bucket_index]["values_count"] = len(
+                            buckets_at_timestep[bucket.bucket_index]["values"]
+                        )
+                    else:
+                        # create
+                        buckets_at_timestep[bucket.bucket_index] = {
+                            "bucket_index": bucket.bucket_index,
+                            "score": scores["score"],
+                            "values": [str(val)],
+                            "values_count": 1
+                        }
                     bucket_values_at_timestep.append({
                         "bucket_index": bucket.bucket_index,
-                        "value": str(val),
+                        "values": str(val),
                         "count": scores["count"],
                         "score": scores["score"],
                     }) 
-        return buckets_at_timestep, bucket_values_at_timestep
+        return buckets_at_timestep.values(), bucket_values_at_timestep
 
 
 def get_combined_timeseries_for_buckets(bucket_collection):
