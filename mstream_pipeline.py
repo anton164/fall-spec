@@ -102,13 +102,9 @@ with Timer("prepare mstream data"):
         f"--downsample {args.downsample}",
     ]))
 
-with open('./MStream/data/'+output_name+'_numeric.txt', 'r') as fp:
-    number_of_lines = len(fp.readlines())
-    print('Total lines records:', number_of_lines)
-
-with open('./MStream/data/'+output_name+'_categ.txt', 'r') as fp:
-    number_of_lines = len(fp.readlines())
-    print('Total lines records:', number_of_lines)
+with open('./MStream/data/'+output_name+'_time.txt', 'r') as fp:
+    number_of_lines = len(set(fp.readlines()))
+    print(number_of_lines)
 
 # Run MStream
 with Timer("Run & compile MSTREAM"):
@@ -135,6 +131,7 @@ with Timer("Run & compile MSTREAM"):
         f"-tb 'data/{output_name}_token_buckets.txt'",
         f"-col 'data/{output_name}_columns.txt'",
         f"-mincount {args.mstream_mincount}",
+        f"-r {number_of_lines}"
         
     ])
     print("Running MSTREAM...")
