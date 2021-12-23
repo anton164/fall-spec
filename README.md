@@ -1,6 +1,5 @@
-# fall-spec
-
-
+# A novel method for event detection in multi-aspect social media data streams
+Based on MStream
 ## Setup
 ```
 conda create python=3.8 -n spec-project
