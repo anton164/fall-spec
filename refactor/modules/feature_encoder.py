@@ -11,6 +11,11 @@ FeatureEncodingLookup = Dict[
     Dict[Any, Any]
 ]
 class FeatureEncoder:
+    """
+        FeatureEncoder's responsibility is to stream raw records
+        and emit processsed records which consist of 
+        encoded categorical & numerical values
+    """
     def __init__(self, timestep_key) -> None:
         # umap, etc.
         self.record_count = 0
@@ -32,8 +37,8 @@ class FeatureEncoder:
         feature_type_lookup = {},
     ) -> List[Record]:
         """ 
-        Takes a slice of raw records 
-        and returns records for the EventDetection
+        Takes a slice of raw records and returns 
+        encoded records for the EventDetection module
         """
         records = []
         for raw_record in raw_records:
