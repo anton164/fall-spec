@@ -1,5 +1,5 @@
 from modules.event_detection import EventDetection
-from modules.data_transformer import DataTransformer
+from modules.data_transformer import FeatureEncoder
 from modules.preprocessing import preprocess_twitter_data
 
 
@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     data_stream = []
 
-    data_transformer = DataTransformer(
+    data_transformer = FeatureEncoder(
     )
 
     model = EventDetection(

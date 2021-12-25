@@ -1,5 +1,5 @@
 from modules.event_detection import EventDetection
-from modules.data_transformer import DataTransformer
+from modules.feature_encoder import FeatureEncoder
 from modules.preprocessing import preprocess_twitter_data
 from tqdm import tqdm
 import ujson
@@ -12,7 +12,7 @@ def load_tweets(location, N):
 
 if __name__ == "__main__":
 
-    data_transformer = DataTransformer(
+    feature_encoder = FeatureEncoder(
         timestep_key="created_at"
     )
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         "../data/labeled_datasets/CentralParkNYC-2021-01-27-2021-02-06.json", 
         1000
     )):
-        preprocessed_data = data_transformer.stream_data(
+        preprocessed_data = feature_encoder.stream_data(
             [tweet_rows],
             feature_type_lookup
         )

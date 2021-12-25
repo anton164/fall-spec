@@ -1,5 +1,5 @@
 from modules.event_detection import EventDetection
-from modules.data_transformer import DataTransformer
+from modules.feature_encoder import FeatureEncoder
 from modules.preprocessing import preprocess_twitter_data
 from tqdm import tqdm
 
@@ -21,7 +21,7 @@ def load_kdd(N):
 
 if __name__ == "__main__":
 
-    data_transformer = DataTransformer(
+    feature_encoder = FeatureEncoder(
         timestep_key="record_count"
     )
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     )
 
     for kdd_row in tqdm(load_kdd(1000)):
-        preprocessed_data = data_transformer.stream_data(
+        preprocessed_data = feature_encoder.stream_data(
             [kdd_row]
         )
         print(preprocessed_data)

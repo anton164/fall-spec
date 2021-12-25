@@ -10,7 +10,7 @@ FeatureEncodingLookup = Dict[
     str,
     Dict[Any, Any]
 ]
-class DataTransformer:
+class FeatureEncoder:
     def __init__(self, timestep_key) -> None:
         # umap, etc.
         self.record_count = 0
