@@ -154,9 +154,12 @@ def read_buckets_generic(file, map_value_to_feature):
                     # Ignore unks
                     if (val == 0.0): 
                         continue
-                    score_by_val[val] = score
                     if val in value_to_bucket_index and bucket_index != value_to_bucket_index[val]:
-                        raise Exception(f"Value {val} hashed to multiple buckets: {value_to_bucket_index[val]} and {bucket_index} at timestep {timestep}")
+                        # raise Exception(f"Value {val} hashed to multiple buckets: {value_to_bucket_index[val]} and {bucket_index} at timestep {timestep}")
+                        # ignore for now
+                        print("WARN: Skipping value which hashed to multiple buckets")
+                        continue
+                    score_by_val[val] = score
                     value_to_bucket_index[val] = bucket_index
                     val_counter[val] += 1
 
