@@ -1,6 +1,5 @@
 from modules.event_detection import EventDetection
 from modules.feature_encoder import FeatureEncoder
-from modules.preprocessing import preprocess_twitter_data
 from tqdm import tqdm
 import ujson
 
@@ -30,7 +29,8 @@ if __name__ == "__main__":
     )):
         preprocessed_data = feature_encoder.stream_data(
             [tweet_rows],
-            feature_type_lookup
+            feature_type_lookup,
+            timestep_round="30Min"
         )
         print(preprocessed_data)
         anomaly_scores = model.stream_data(
