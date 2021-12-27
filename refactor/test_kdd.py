@@ -29,9 +29,10 @@ if __name__ == "__main__":
         # model parameters
     )
 
-    for kdd_row in tqdm(load_kdd(1000)):
+    for kdd_row in tqdm(load_kdd(1001)):
         preprocessed_data = feature_encoder.stream_data(
-            [kdd_row]
+            [kdd_row],
+            timestep_round=1000
         )
         print(preprocessed_data)
         anomaly_scores = model.stream_data(

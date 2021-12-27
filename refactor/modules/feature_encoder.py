@@ -36,7 +36,7 @@ class FeatureEncoder:
     def _compute_timestep(
         self, 
         raw_record: RawRecord, 
-        timestep_round: Union[str, None]=None # pd timedelta
+        timestep_round: Union[str, int, None]=None # int or pd timedelta
     ):
         """ Ensure that first timestep starts at 0 """
         record_timestep = (self.record_count 
@@ -47,17 +47,19 @@ class FeatureEncoder:
             self.timestep_offset = record_timestep
         record_timestep -= self.timestep_offset
 
-        if timestep_round is not None:
+        if isinstance(timestep_round, str):
             record_timestep = int(
                 pd.Timestamp(record_timestep, unit='ms').ceil(timestep_round).timestamp() / (30 * 60)
             )
+        elif isinstance(timestep_round, int):
+            record_timestep = record_timestep // timestep_round
         return record_timestep
 
     def stream_data(
         self, 
         raw_records: List[RawRecord],
         feature_type_lookup = {},
-        timestep_round: Union[str, None]=None # pd timedelta
+        timestep_round: Union[int, str, None]=None # int or pd timedelta
     ) -> List[Record]:
         """ 
         Takes a slice of raw records and returns 
