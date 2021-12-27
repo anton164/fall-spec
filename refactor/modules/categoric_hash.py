@@ -20,7 +20,7 @@ class Categorichash:
 
     def hash(self, a, i):
         resid = (a * self.hash_a[i] + self.hash_b[i]) % self.num_buckets
-        return resid + (resid < 0 if self.num_buckets else 0)
+        return resid + (self.num_buckets if resid < 0 else 0)
 
     def insert(self, cur_int, weight):
         for i in range(self.num_rows):
