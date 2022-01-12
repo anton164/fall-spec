@@ -230,7 +230,7 @@ vector<double> *mstream(vector<vector<double> > &numeric, vector<vector<long> > 
                 categ_score[j].lower(factor);
             }
 
-            for (int i = 0; i < words_to_bucket.size(); i++) {
+            for (int j = 0; j < words_to_bucket.size(); j++) {
                 vector<string> tmp_file_name;
                 char sep = '.';
                 SplitString(token_buckets_filename, tmp_file_name, sep);
