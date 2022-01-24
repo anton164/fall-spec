@@ -6,8 +6,7 @@ import ujson
 def load_tweets(location, N):
     with open(location, "r") as f:
         tweets = ujson.load(f)
-    for tweet in tweets[:N]:
-        yield tweet
+    yield tweets[:N]
 
 if __name__ == "__main__":
 
@@ -20,6 +19,7 @@ if __name__ == "__main__":
     )
     
     feature_type_lookup = {
+        "text": "fasttext_umap",
         "hashtags": "categorical",
         "retweeted": "categorical",
     }
@@ -27,8 +27,12 @@ if __name__ == "__main__":
         "../data/labeled_datasets/CentralParkNYC-2021-01-27-2021-02-06.json", 
         1000
     )):
+        feature_encoder.prepare_umap_dr(
+            tweet_rows,
+            "text"
+        )
         preprocessed_data = feature_encoder.stream_data(
-            [tweet_rows],
+            tweet_rows,
             feature_type_lookup,
             timestep_round="30Min"
         )
