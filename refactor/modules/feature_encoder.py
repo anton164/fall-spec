@@ -73,7 +73,7 @@ class FeatureEncoder:
             record_timestep = record_timestep // timestep_round
         return record_timestep
     
-    def prepare_umap_dr(
+    def fit_umap(
         self,
         raw_records: List[RawRecord],
         feature_name: str
