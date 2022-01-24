@@ -39,18 +39,6 @@ class FeatureEncoder:
                 feature_lookup[val] = len(feature_lookup) + 1
             return feature_lookup[val]
 
-    def _encode_fasttext_umap(self, feature_name, val):
-        tokens = preprocess_text(
-            val
-        )
-        
-        return [
-            self.feature_lookups[feature_name][token] 
-            if token in self.feature_lookups[feature_name] 
-            else UNK
-            for token in tokens
-        ]
-
     def _compute_timestep(
         self, 
         raw_record: RawRecord, 
@@ -73,7 +61,19 @@ class FeatureEncoder:
             record_timestep = record_timestep // timestep_round
         return record_timestep
     
-    def fit_umap(
+    def _encode_fasttext_umap(self, feature_name, val):
+        tokens = preprocess_text(
+            val
+        )
+        
+        return [
+            self.feature_lookups[feature_name][token] 
+            if token in self.feature_lookups[feature_name] 
+            else UNK
+            for token in tokens
+        ]
+
+    def fit_fasttext_umap(
         self,
         raw_records: List[RawRecord],
         feature_name: str

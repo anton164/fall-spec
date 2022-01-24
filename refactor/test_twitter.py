@@ -27,7 +27,7 @@ if __name__ == "__main__":
         "../data/labeled_datasets/CentralParkNYC-2021-01-27-2021-02-06.json", 
         1000
     )):
-        feature_encoder.prepare_umap_dr(
+        feature_encoder.fit_fasttext_umap(
             tweet_rows,
             "text"
         )
