@@ -3,6 +3,12 @@ from typing import List, Any, Dict, Union
 from modules.event_detection import Record
 from collections import defaultdict
 import pandas as pd
+from utils.dr import basic_umap_dr
+from utils.nlp import construct_vocabulary_encoding, preprocess_text, load_fasttext
+
+RANDOM_STATE = 1000
+UNK = "UNK"
+FASTTEXT_LIMIT = 1000000
 
 RawRecord = Dict[Any, Any]
 
@@ -54,6 +60,43 @@ class FeatureEncoder:
         elif isinstance(timestep_round, int):
             record_timestep = record_timestep // timestep_round
         return record_timestep
+    
+    def _encode_fasttext_umap(self, feature_name, val):
+        tokens = preprocess_text(
+            val
+        )
+        
+        return [
+            self.feature_lookups[feature_name][token] 
+            if token in self.feature_lookups[feature_name] 
+            else UNK
+            for token in tokens
+        ]
+
+    def fit_fasttext_umap(
+        self,
+        raw_records: List[RawRecord],
+        feature_name: str
+    ):
+        print(f"Preparing umap dr for '{feature_name}' feature...")
+        fasttext = load_fasttext(FASTTEXT_LIMIT)
+        vocabulary, tokenized_string_idxs, fasttext_lookup = construct_vocabulary_encoding(
+            [preprocess_text(record[feature_name]) for record in raw_records],
+            fasttext
+        )
+        print("Vocabulary size", len(vocabulary))
+        print("Running UMAP dimensionality reduction...")
+        umap_dr_result= basic_umap_dr(
+            list(fasttext_lookup.values()), 
+            min_dist=0.1, 
+            spread=1,
+            random_state=RANDOM_STATE
+        )
+        self.feature_lookups[feature_name] = {
+            key:umap_val[0]
+            for ((key,fasttext_val), umap_val)  in 
+            zip(fasttext_lookup.items(), umap_dr_result)
+        }
 
     def stream_data(
         self, 
@@ -78,7 +121,9 @@ class FeatureEncoder:
                 for feature_name, val in raw_record.items():
                     if feature_name in feature_type_lookup:
                         feature_type = feature_type_lookup[feature_name]
-                        if feature_type == "categorical":
+                        if feature_type == "fasttext_umap":
+                            record["numerical"][feature_name] = self._encode_fasttext_umap(feature_name, val)
+                        elif feature_type == "categorical":
                             record[feature_type][feature_name] = self._encode_categorical_value(feature_name, val)
                         else:
                             record[feature_type][feature_name] = val
